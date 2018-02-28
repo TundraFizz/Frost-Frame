@@ -1,8 +1,8 @@
 {
   "targets": [
     {
-      "target_name": "module",
-      "sources": ["./cpp/module.cpp"]
+      "target_name": "dsfjslkdf",
+      "sources": ["./cpp/dsfjslkdf.cpp"]
     }
   ]
 }

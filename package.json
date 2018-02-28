@@ -1,18 +1,24 @@
 {
-  "name": "node-cpp-hello-world",
+  "name": "electron-hello-world",
   "version": "1.0.0",
-  "description": "Node.JS and C++ example",
+  "description": "Sample hello world example for Electron.",
   "main": "main.js",
   "author": "Tundra Fizz",
   "license": "ISC",
-  "dependencies": {},
-  "devDependencies": {},
+  "dependencies": {
+    "electron": "latest",
+    "jquery": "latest"
+  },
+  "devDependencies": {
+    "electron-rebuild": "^1.7.3"
+  },
   "repository": {
     "type": "git",
-    "url": "https://github.com/TundraFizz/TBA"
+    "url": "https://github.com/TundraFizz/Tundra-Fizz"
   },
   "scripts": {
-    "compile": "node-gyp configure build",
-    "start": "node module.js"
+    "start": "electron .",
+    "start-old": "node module.js",
+    "compile": "node-gyp configure build"
   }
 }
