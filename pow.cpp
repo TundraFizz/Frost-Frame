@@ -126,7 +126,7 @@ void Pow(const Nan::FunctionCallbackInfo<v8::Value>& info) {
 
     double arg0 = info[0]->NumberValue();
     double arg1 = info[1]->NumberValue();
-    v8::Local<v8::Number> num = Nan::New(pow(arg0, arg1));
+    v8::Local<v8::Number> num = Nan::New(pow(arg0, arg1)+5);
 
     info.GetReturnValue().Set(num);
 }
