@@ -40,12 +40,29 @@ int GetEncoderClsid(const WCHAR* format, CLSID* pClsid){
 
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam){
   switch(msg){
+
     case WM_CLOSE:
       DestroyWindow(hwnd);
     break;
+
     case WM_DESTROY:
       PostQuitMessage(0);
     break;
+
+    case WM_SETCURSOR:
+      if(LOWORD(lParam) == HTCLIENT){
+        HINSTANCE instance;
+        LPCTSTR   cursor;
+
+        instance = NULL;
+        cursor   = IDC_CROSS;
+
+        SetCursor(LoadCursor(instance, cursor));
+
+        return true;
+      }
+    break; // default non-client cursor processing
+
     default:
       return DefWindowProc(hwnd, msg, wParam, lParam);
   }
@@ -55,10 +72,9 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam){
 void Reeeeeee(const Nan::FunctionCallbackInfo<v8::Value>& info){
   std::cout << "Enter: Reeeeeee\n";
   HINSTANCE hInstance = GetModuleHandle(NULL);
-  WNDCLASS winclass;
-  HWND hwnd;
   MSG Msg;
 
+  WNDCLASS winclass;
   winclass.style = CS_DBLCLKS | CS_OWNDC | CS_HREDRAW | CS_VREDRAW;
   winclass.lpfnWndProc = WindowProc;
   winclass.cbClsExtra = 0;
@@ -71,15 +87,17 @@ void Reeeeeee(const Nan::FunctionCallbackInfo<v8::Value>& info){
   winclass.lpszClassName = "Win Class Name";
 
   if(!RegisterClass(&winclass)){
-    std::cout << "Class not registered";
+    std::cout << "Class not registered\n";
     return;
-  }else
-    std::cout << "Class is registered";
+  }
 
-  hwnd = CreateWindowA(
+  HWND hwnd = CreateWindowEx(
+    WS_EX_LAYERED,
     "Win Class Name",
     "Hello World",
-    WS_OVERLAPPEDWINDOW | WS_VISIBLE,
+    WS_POPUP | WS_VISIBLE,
+    // WS_POPUP | WS_VISIBLE,
+    // WS_OVERLAPPEDWINDOW | WS_VISIBLE,
     0, 0,
     320, 200,
     NULL,
@@ -92,9 +110,17 @@ void Reeeeeee(const Nan::FunctionCallbackInfo<v8::Value>& info){
     return;
   }
 
+  // Make the window transparent
+  SetLayeredWindowAttributes(hwnd, NULL, 128, LWA_ALPHA);
+
+  // Change the background color of the window
+  HBRUSH brush = CreateSolidBrush(RGB(255, 255, 255));
+  SetClassLongPtr(hwnd, GCLP_HBRBACKGROUND, (LONG)brush);
+
+  ShowWindow(hwnd, SW_SHOW);
+  UpdateWindow(hwnd);
+
   return;
-  ShowWindow(hwnd, NULL);
-  // UpdateWindow(hwnd);
 
   std::cout << "1\n";
   // The Message Loop
