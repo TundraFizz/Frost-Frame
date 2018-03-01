@@ -1,10 +1,11 @@
-#include <node_api.h>
+#include "qwe/node_api.h"
 #include <windows.h>
 #include <iostream>
 #include <ole2.h>
 #include <olectl.h>
 #include <gdiplus.h>
 #pragma comment (lib,"Gdiplus.lib")
+
 
 int GetEncoderClsid(const WCHAR* format, CLSID* pClsid){
   UINT num  = 0; // number of image encoders

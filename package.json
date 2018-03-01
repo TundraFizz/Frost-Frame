@@ -7,7 +7,9 @@
   "license": "ISC",
   "dependencies": {
     "electron": "latest",
-    "jquery": "latest"
+    "jquery": "latest",
+    "nan": "latest",
+    "electron-rebuild": "^1.7.3"
   },
   "devDependencies": {
     "electron-rebuild": "^1.7.3"
@@ -18,7 +20,9 @@
   },
   "scripts": {
     "start": "electron .",
+    "compile": "./node_modules/.bin/electron-rebuild",
     "start-old": "node module.js",
-    "compile": "node-gyp configure build"
+    "compile-old": "node-gyp configure build",
+    "rebuild": "electron-rebuild -f -w dsfjslkdf"
   }
 }

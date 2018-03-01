@@ -1,8 +1,9 @@
 {
-  "targets": [
-    {
-      "target_name": "dsfjslkdf",
-      "sources": ["./cpp/dsfjslkdf.cpp"]
-    }
-  ]
+  "targets": [{
+    "target_name": "pow",
+    "sources": [ "pow.cpp" ],
+    "include_dirs": [
+      "<!(node -e \"require('nan')\")"
+    ]
+  }]
 }
