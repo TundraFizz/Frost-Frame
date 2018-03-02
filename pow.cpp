@@ -69,6 +69,34 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam){
   return 0;
 }
 
+int smallestLeft  = 0;
+int smallestTop   = 0;
+int largestRight  = 0;
+int largestBottom = 0;
+bool firstRun     = true;
+
+BOOL CALLBACK MonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData){
+  MONITORINFO mi;
+  mi.cbSize = sizeof(mi);
+  GetMonitorInfo(hMonitor, &mi);
+  RECT r = mi.rcMonitor;
+
+  if(firstRun){
+    firstRun      = false;
+    smallestLeft  = r.left;
+    smallestTop   = r.top;
+    largestRight  = r.right;
+    largestBottom = r.bottom;
+  }else{
+    if(r.left   < smallestLeft)  smallestLeft  = r.left;
+    if(r.top    < smallestTop)   smallestTop   = r.top;
+    if(r.right  > largestRight)  largestRight  = r.right;
+    if(r.bottom > largestBottom) largestBottom = r.bottom;
+  }
+
+  return true;
+}
+
 void Reeeeeee(const Nan::FunctionCallbackInfo<v8::Value>& info){
   std::cout << "Enter: Reeeeeee\n";
   HINSTANCE hInstance = GetModuleHandle(NULL);
@@ -91,6 +119,17 @@ void Reeeeeee(const Nan::FunctionCallbackInfo<v8::Value>& info){
     return;
   }
 
+  EnumDisplayMonitors(NULL, NULL, MonitorEnumProc, 0);
+  int maskWidth  = largestRight  - smallestLeft;
+  int maskHeight = largestBottom - smallestTop;
+  std::cout << "========== Monitor Information ==========\n";
+  std::cout << "smallestLeft : " << smallestLeft  << "\n";
+  std::cout << "smallestTop  : " << smallestTop   << "\n";
+  std::cout << "largestRight : " << largestRight  << "\n";
+  std::cout << "largestBottom: " << largestBottom << "\n";
+  std::cout << "maskWidth    : " << maskWidth     << "\n";
+  std::cout << "maskHeight   : " << maskHeight    << "\n";
+
   HWND hwnd = CreateWindowEx(
     WS_EX_LAYERED,
     "Win Class Name",
@@ -99,7 +138,8 @@ void Reeeeeee(const Nan::FunctionCallbackInfo<v8::Value>& info){
     // WS_POPUP | WS_VISIBLE,
     // WS_OVERLAPPEDWINDOW | WS_VISIBLE,
     0, 0,
-    320, 200,
+    maskWidth,
+    maskHeight,
     NULL,
     NULL,
     hInstance,
