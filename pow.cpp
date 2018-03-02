@@ -11,8 +11,6 @@
 HWND hwndTop;
 HWND hwndBot;
 
-HRGN WinRgn; // Create RGN
-
 int selectX1   = 0;
 int selectY1   = 0;
 int selectX2   = 0;
@@ -20,29 +18,11 @@ int selectY2   = 0;
 int mouseStep  = 0;
 bool mouseDown = false;
 
-void DrawRectangle(HWND hwnd, int x1, int y1, int x2, int y2){
-  HDC hdc = GetDC(hwnd);
-
-  int upperLeftX  = 0;
-  int upperLeftY  = 0;
-  int lowerRightX = 0;
-  int lowerRightY = 0;
-
-  if(x1 < x2) upperLeftX = x1;
-  else        upperLeftX = x2;
-
-  if(y1 < y2) upperLeftY = y1;
-  else        upperLeftY = y2;
-
-  if(x1 > x2) lowerRightX = x1;
-  else        lowerRightX = x2;
-
-  if(y1 > y2) lowerRightY = y1;
-  else        lowerRightY = y2;
-
-  Rectangle(hdc, upperLeftX, upperLeftY, lowerRightX, lowerRightY);
-  ReleaseDC(hwnd, hdc);
-}
+int smallestLeft  = 0;
+int smallestTop   = 0;
+int largestRight  = 0;
+int largestBottom = 0;
+bool firstRun     = true;
 
 int GetEncoderClsid(const WCHAR* format, CLSID* pClsid){
   UINT num  = 0; // number of image encoders
@@ -74,24 +54,109 @@ int GetEncoderClsid(const WCHAR* format, CLSID* pClsid){
   return -1; // Failure
 }
 
+bool saveBitmap(LPCSTR filename, HBITMAP bmp, HPALETTE pal){
+    bool result = false;
+    PICTDESC pd;
+
+    pd.cbSizeofstruct   = sizeof(PICTDESC);
+    pd.picType      = PICTYPE_BITMAP;
+    pd.bmp.hbitmap  = bmp;
+    pd.bmp.hpal     = pal;
+
+    LPPICTURE picture;
+    HRESULT res = OleCreatePictureIndirect(&pd, IID_IPicture, false,
+                       reinterpret_cast<void**>(&picture));
+
+    if (!SUCCEEDED(res))
+    return false;
+
+    LPSTREAM stream;
+    res = CreateStreamOnHGlobal(0, true, &stream);
+
+    if (!SUCCEEDED(res))
+    {
+    picture->Release();
+    return false;
+    }
+
+    LONG bytes_streamed;
+    res = picture->SaveAsFile(stream, true, &bytes_streamed);
+
+    HANDLE file = CreateFile(filename, GENERIC_WRITE, FILE_SHARE_READ, 0,
+                 CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, 0);
+
+    if (!SUCCEEDED(res) || !file)
+    {
+    stream->Release();
+    picture->Release();
+    return false;
+    }
+
+    HGLOBAL mem = 0;
+    GetHGlobalFromStream(stream, &mem);
+    LPVOID data = GlobalLock(mem);
+
+    DWORD bytes_written;
+
+    result   = !!WriteFile(file, data, bytes_streamed, &bytes_written, 0);
+    result  &= (bytes_written == static_cast<DWORD>(bytes_streamed));
+
+    GlobalUnlock(mem);
+    CloseHandle(file);
+
+    stream->Release();
+    picture->Release();
+
+    return result;
+}
+
+bool screenCapturePart(int x, int y, int w, int h, LPCSTR fname){
+    HDC hdcSource = GetDC(NULL);
+    HDC hdcMemory = CreateCompatibleDC(hdcSource);
+
+    int capX = GetDeviceCaps(hdcSource, HORZRES);
+    int capY = GetDeviceCaps(hdcSource, VERTRES);
+
+    HBITMAP hBitmap = CreateCompatibleBitmap(hdcSource, w, h);
+    HBITMAP hBitmapOld = (HBITMAP)SelectObject(hdcMemory, hBitmap);
+
+    BitBlt(hdcMemory, 0, 0, w, h, hdcSource, x, y, SRCCOPY);
+    hBitmap = (HBITMAP)SelectObject(hdcMemory, hBitmapOld);
+
+    DeleteDC(hdcSource);
+    DeleteDC(hdcMemory);
+
+    HPALETTE hpal = NULL;
+    if(saveBitmap(fname, hBitmap, hpal)) return true;
+    return false;
+}
+
+int ConvertBmpToPng(){
+  Gdiplus::GdiplusStartupInput gdiplusStartupInput;
+  ULONG_PTR gdiplusToken;
+  GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL);
+
+  CLSID  encoderClsid;
+  Gdiplus::Status stat;
+  Gdiplus::Image* image = new Gdiplus::Image(L"testing.bmp");
+
+  // Get the CLSID of the PNG encoder.
+  GetEncoderClsid(L"image/png", &encoderClsid);
+
+  stat = image->Save(L"testing.png", &encoderClsid, NULL);
+
+  if(stat == Gdiplus::Ok)
+    printf("testing.png was saved successfully\n");
+  else
+    printf("Failure: stat = %d\n", stat);
+
+  // delete image;
+  Gdiplus::GdiplusShutdown(gdiplusToken);
+  return 0;
+}
+
 LRESULT CALLBACK WindowProcTop(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam){
-
-  // HBRUSH hBrush = CreateSolidBrush(RGB(200,200,200));
-  PAINTSTRUCT ps;
-  HDC hdc;
-
-  RECT qwe;
-  qwe.left   = 100;
-  qwe.top    = 100;
-  qwe.right  = 400;
-  qwe.bottom = 250;
-
-  // ps.hdc     = GetDC(hwnd);
-  // ps.rcPaint = qwe;
-  // ps.fErase  = true;
-
   switch(msg){
-
     case WM_CLOSE:{
       DestroyWindow(hwnd);
       break;
@@ -125,10 +190,22 @@ LRESULT CALLBACK WindowProcTop(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam
     }
 
     case WM_LBUTTONUP:{
-      // int xPos = GET_X_LPARAM(lParam);
-      // int yPos = GET_Y_LPARAM(lParam);
+      selectX2 = GET_X_LPARAM(lParam);
+      selectY2 = GET_Y_LPARAM(lParam);
       mouseStep = 0;
-      // CloseWindow(hwnd);
+      CloseWindow(hwndTop);
+      CloseWindow(hwndBot);
+
+      int width  = selectX2 - selectX1;
+      int height = selectY2 - selectY1;
+
+      int ssX = selectX1 + smallestLeft; // Subtract from the smallest top-left corner
+      int ssY = selectY1 + smallestTop;  // Subtract from the smallest top-left corner
+
+      std::cout << selectX1 << ", " << selectY1 << ", " << width << ", " << height << "\n";
+      screenCapturePart(ssX, ssY, width, height, "testing.bmp");
+      ConvertBmpToPng();
+
       break;
     }
 
@@ -158,22 +235,10 @@ LRESULT CALLBACK WindowProcTop(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam
         HRGN WinRgn1;
         HRGN WinRgn2;
         WinRgn1 = CreateRectRgn(upperLeftX, upperLeftY, lowerRightX, lowerRightY);
-        WinRgn2 = CreateRectRgn(0, 0, 200, 200);
+        WinRgn2 = CreateRectRgn(-2560, 0, 2560, 1440);
         CombineRgn(WinRgn1, WinRgn1, WinRgn2, RGN_XOR);
         SetWindowRgn(hwndBot, WinRgn1, true);
         UpdateWindow(hwndBot);
-
-        // InvalidateRect(hwnd, NULL, false);
-        // DrawRectangle(hwnd, selectX1, selectY1, selectX2, selectY2);
-        // UpdateWindow(hwnd);
-
-        // // std::cout << "(" << selectX1 << ", " << selectY1 << ") (" << selectX2 << ", " << selectY2 << ")\n";
-
-        // // HRGN WinRgn;
-        // WinRgn = CreateRectRgn(upperLeftX, upperLeftY, lowerRightX, lowerRightY);
-        // SetWindowRgn(hwnd, WinRgn, true);
-        // UpdateWindow(hwnd);
-
       }
       break;
     }
@@ -185,23 +250,7 @@ LRESULT CALLBACK WindowProcTop(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam
 }
 
 LRESULT CALLBACK WindowProcBot(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam){
-
-  // HBRUSH hBrush = CreateSolidBrush(RGB(200,200,200));
-  PAINTSTRUCT ps;
-  HDC hdc;
-
-  RECT qwe;
-  qwe.left   = 100;
-  qwe.top    = 100;
-  qwe.right  = 400;
-  qwe.bottom = 250;
-
-  // ps.hdc     = GetDC(hwnd);
-  // ps.rcPaint = qwe;
-  // ps.fErase  = true;
-
   switch(msg){
-
     case WM_CLOSE:{
       DestroyWindow(hwnd);
       break;
@@ -212,125 +261,12 @@ LRESULT CALLBACK WindowProcBot(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam
       break;
     }
 
-    // case WM_SETCURSOR:{
-    //   if(LOWORD(lParam) == HTCLIENT){
-    //     HINSTANCE instance;
-    //     LPCTSTR   cursor;
-
-    //     instance = NULL;
-    //     cursor   = IDC_CROSS;
-
-    //     SetCursor(LoadCursor(instance, cursor));
-
-    //     return true;
-    //   }
-    //   break;
-    // }
-
-    case WM_LBUTTONDOWN:{
-      // selectX1 = GET_X_LPARAM(lParam);
-      // selectY1 = GET_Y_LPARAM(lParam);
-      // mouseStep = 1;
-
-      // WinRgn = CreateRectRgn(10, 10, 40, 30);
-      // SetWindowRgn(hwnd, WinRgn, true);
-      // UpdateWindow(hwnd);
-
-      break;
-    }
-
-    case WM_LBUTTONUP:{
-      // int xPos = GET_X_LPARAM(lParam);
-      // int yPos = GET_Y_LPARAM(lParam);
-      // mouseStep = 0;
-      // CloseWindow(hwnd);
-
-      // DeleteObject(WinRgn);
-      // SetWindowRgn(hwnd,WinRgn,true);
-      // UpdateWindow(hwnd);
-
-      break;
-    }
-
-    case WM_MOUSEMOVE:{
-      if(mouseStep == 1 || mouseStep == 2){
-
-        // InvalidateRect(hwnd, NULL, true);
-        // DrawRectangle(hwnd, selectX1, selectY1, selectX2, selectY2);
-        // UpdateWindow(hwnd);
-
-        // int upperLeftX  = 0;
-        // int upperLeftY  = 0;
-        // int lowerRightX = 0;
-        // int lowerRightY = 0;
-
-        // if(selectX1 < selectX2) upperLeftX = selectX1;
-        // else                    upperLeftX = selectX2;
-
-        // if(selectY1 < selectY2) upperLeftY = selectY1;
-        // else        upperLeftY = selectY2;
-
-        // if(selectX1 > selectX2) lowerRightX = selectX1;
-        // else        lowerRightX = selectX2;
-
-        // if(selectY1 > selectY2) lowerRightY = selectY1;
-        // else        lowerRightY = selectY2;
-
-        // std::cout << "Upper Left (" << upperLeftX << ", " << upperLeftY << ") Lower Right (" << lowerRightX << ", " << lowerRightY << ")\n";
-
-        // HRGN WinRgn;
-        // WinRgn = CreateRectRgn(upperLeftX, upperLeftY, lowerRightX, lowerRightY);
-        // SetWindowRgn(hwndBot, WinRgn, true);
-        // UpdateWindow(hwndBot);
-
-
-
-
-
-        // selectX2 = GET_X_LPARAM(lParam);
-        // selectY2 = GET_Y_LPARAM(lParam);
-        // mouseStep = 2;
-        // InvalidateRect(hwnd, NULL, false);
-
-        // UpdateWindow(hwnd);
-      }
-      break;
-    }
-
-   case WM_PAINT:{
-      // if(mouseStep == 2){
-      //   // mDC = BeginPaint(hwnd, &ps);
-      //   std::cout << "Painting\n";
-      //   hdc = BeginPaint(hwnd, &ps);
-
-      //   DrawRectangle(hwnd, selectX1, selectY1, selectX2, selectY2);
-      //   // FillRect(hdc, &qwe, hBrush);
-
-      //   // TextOut(hdc, 0, 0, "Hello, Windows!", 15);
-
-      //   // DrawRectangle(hwnd, selectX1, selectY1, selectX2, selectY2);
-      //   // InvalidateRect(hwnd, NULL, true);
-      //   // UpdateWindow(hwnd);
-
-      //   EndPaint(hwnd, &ps);
-      //   // return 0;
-      // }
-
-      // break;
-    }
-
     default:{
       return DefWindowProc(hwnd, msg, wParam, lParam);
     }
   }
   return 0;
 }
-
-int smallestLeft  = 0;
-int smallestTop   = 0;
-int largestRight  = 0;
-int largestBottom = 0;
-bool firstRun     = true;
 
 BOOL CALLBACK MonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData){
   MONITORINFO mi;
@@ -368,11 +304,6 @@ void Reeeeeee(const Nan::FunctionCallbackInfo<v8::Value>& info){
   std::cout << "largestBottom: " << largestBottom << "\n";
   std::cout << "maskWidth    : " << maskWidth     << "\n";
   std::cout << "maskHeight   : " << maskHeight    << "\n";
-
-  smallestLeft = 100;
-  smallestTop  = 100;
-  maskWidth    = 300;
-  maskHeight   = 300;
 
   WNDCLASS winClassTop;
   winClassTop.style = CS_DBLCLKS | CS_OWNDC | CS_HREDRAW | CS_VREDRAW;
@@ -415,14 +346,10 @@ void Reeeeeee(const Nan::FunctionCallbackInfo<v8::Value>& info){
     // 1. Make it a popup window which removes all borders/menu items from it
     // 2. Set the window to initially be visible
     WS_POPUP | WS_VISIBLE,
-    600,
-    400,
-    200,
-    200,
-    // smallestLeft,
-    // smallestTop,
-    // maskWidth,
-    // maskHeight,
+    smallestLeft,
+    smallestTop,
+    maskWidth,
+    maskHeight,
     NULL,
     NULL,
     hInstance,
@@ -438,10 +365,10 @@ void Reeeeeee(const Nan::FunctionCallbackInfo<v8::Value>& info){
     // 1. Make it a popup window which removes all borders/menu items from it
     // 2. Set the window to initially be visible
     WS_POPUP | WS_VISIBLE,
-    600,
-    400,
-    200,
-    200,
+    smallestLeft,
+    smallestTop,
+    maskWidth,
+    maskHeight,
     NULL,
     NULL,
     hInstance,
