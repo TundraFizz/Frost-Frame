@@ -8,6 +8,11 @@
 #include <gdiplus.h>
 #pragma comment (lib,"Gdiplus.lib")
 
+HWND hwndTop;
+HWND hwndBot;
+
+HRGN WinRgn; // Create RGN
+
 int selectX1   = 0;
 int selectY1   = 0;
 int selectX2   = 0;
@@ -69,7 +74,7 @@ int GetEncoderClsid(const WCHAR* format, CLSID* pClsid){
   return -1; // Failure
 }
 
-LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam){
+LRESULT CALLBACK WindowProcTop(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam){
 
   // HBRUSH hBrush = CreateSolidBrush(RGB(200,200,200));
   PAINTSTRUCT ps;
@@ -132,37 +137,191 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam){
         selectX2 = GET_X_LPARAM(lParam);
         selectY2 = GET_Y_LPARAM(lParam);
         mouseStep = 2;
-        InvalidateRect(hwnd, NULL, false);
+
+        int upperLeftX  = 0;
+        int upperLeftY  = 0;
+        int lowerRightX = 0;
+        int lowerRightY = 0;
+
+        if(selectX1 < selectX2) upperLeftX = selectX1;
+        else                    upperLeftX = selectX2;
+
+        if(selectY1 < selectY2) upperLeftY = selectY1;
+        else        upperLeftY = selectY2;
+
+        if(selectX1 > selectX2) lowerRightX = selectX1;
+        else        lowerRightX = selectX2;
+
+        if(selectY1 > selectY2) lowerRightY = selectY1;
+        else        lowerRightY = selectY2;
+
+        HRGN WinRgn1;
+        HRGN WinRgn2;
+        WinRgn1 = CreateRectRgn(upperLeftX, upperLeftY, lowerRightX, lowerRightY);
+        WinRgn2 = CreateRectRgn(0, 0, 200, 200);
+        CombineRgn(WinRgn1, WinRgn1, WinRgn2, RGN_XOR);
+        SetWindowRgn(hwndBot, WinRgn1, true);
+        UpdateWindow(hwndBot);
+
+        // InvalidateRect(hwnd, NULL, false);
         // DrawRectangle(hwnd, selectX1, selectY1, selectX2, selectY2);
+        // UpdateWindow(hwnd);
+
+        // // std::cout << "(" << selectX1 << ", " << selectY1 << ") (" << selectX2 << ", " << selectY2 << ")\n";
+
+        // // HRGN WinRgn;
+        // WinRgn = CreateRectRgn(upperLeftX, upperLeftY, lowerRightX, lowerRightY);
+        // SetWindowRgn(hwnd, WinRgn, true);
+        // UpdateWindow(hwnd);
+
+      }
+      break;
+    }
+
+    default:
+      return DefWindowProc(hwnd, msg, wParam, lParam);
+  }
+  return 0;
+}
+
+LRESULT CALLBACK WindowProcBot(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam){
+
+  // HBRUSH hBrush = CreateSolidBrush(RGB(200,200,200));
+  PAINTSTRUCT ps;
+  HDC hdc;
+
+  RECT qwe;
+  qwe.left   = 100;
+  qwe.top    = 100;
+  qwe.right  = 400;
+  qwe.bottom = 250;
+
+  // ps.hdc     = GetDC(hwnd);
+  // ps.rcPaint = qwe;
+  // ps.fErase  = true;
+
+  switch(msg){
+
+    case WM_CLOSE:{
+      DestroyWindow(hwnd);
+      break;
+    }
+
+    case WM_DESTROY:{
+      PostQuitMessage(0);
+      break;
+    }
+
+    // case WM_SETCURSOR:{
+    //   if(LOWORD(lParam) == HTCLIENT){
+    //     HINSTANCE instance;
+    //     LPCTSTR   cursor;
+
+    //     instance = NULL;
+    //     cursor   = IDC_CROSS;
+
+    //     SetCursor(LoadCursor(instance, cursor));
+
+    //     return true;
+    //   }
+    //   break;
+    // }
+
+    case WM_LBUTTONDOWN:{
+      // selectX1 = GET_X_LPARAM(lParam);
+      // selectY1 = GET_Y_LPARAM(lParam);
+      // mouseStep = 1;
+
+      // WinRgn = CreateRectRgn(10, 10, 40, 30);
+      // SetWindowRgn(hwnd, WinRgn, true);
+      // UpdateWindow(hwnd);
+
+      break;
+    }
+
+    case WM_LBUTTONUP:{
+      // int xPos = GET_X_LPARAM(lParam);
+      // int yPos = GET_Y_LPARAM(lParam);
+      // mouseStep = 0;
+      // CloseWindow(hwnd);
+
+      // DeleteObject(WinRgn);
+      // SetWindowRgn(hwnd,WinRgn,true);
+      // UpdateWindow(hwnd);
+
+      break;
+    }
+
+    case WM_MOUSEMOVE:{
+      if(mouseStep == 1 || mouseStep == 2){
+
+        // InvalidateRect(hwnd, NULL, true);
+        // DrawRectangle(hwnd, selectX1, selectY1, selectX2, selectY2);
+        // UpdateWindow(hwnd);
+
+        // int upperLeftX  = 0;
+        // int upperLeftY  = 0;
+        // int lowerRightX = 0;
+        // int lowerRightY = 0;
+
+        // if(selectX1 < selectX2) upperLeftX = selectX1;
+        // else                    upperLeftX = selectX2;
+
+        // if(selectY1 < selectY2) upperLeftY = selectY1;
+        // else        upperLeftY = selectY2;
+
+        // if(selectX1 > selectX2) lowerRightX = selectX1;
+        // else        lowerRightX = selectX2;
+
+        // if(selectY1 > selectY2) lowerRightY = selectY1;
+        // else        lowerRightY = selectY2;
+
+        // std::cout << "Upper Left (" << upperLeftX << ", " << upperLeftY << ") Lower Right (" << lowerRightX << ", " << lowerRightY << ")\n";
+
+        // HRGN WinRgn;
+        // WinRgn = CreateRectRgn(upperLeftX, upperLeftY, lowerRightX, lowerRightY);
+        // SetWindowRgn(hwndBot, WinRgn, true);
+        // UpdateWindow(hwndBot);
+
+
+
+
+
+        // selectX2 = GET_X_LPARAM(lParam);
+        // selectY2 = GET_Y_LPARAM(lParam);
+        // mouseStep = 2;
+        // InvalidateRect(hwnd, NULL, false);
+
         // UpdateWindow(hwnd);
       }
       break;
     }
 
    case WM_PAINT:{
-      if(mouseStep == 2){
-        // mDC = BeginPaint(hwnd, &ps);
-        std::cout << "Painting\n";
-        hdc = BeginPaint(hwnd, &ps);
+      // if(mouseStep == 2){
+      //   // mDC = BeginPaint(hwnd, &ps);
+      //   std::cout << "Painting\n";
+      //   hdc = BeginPaint(hwnd, &ps);
 
-        DrawRectangle(hwnd, selectX1, selectY1, selectX2, selectY2);
-        // FillRect(hdc, &qwe, hBrush);
+      //   DrawRectangle(hwnd, selectX1, selectY1, selectX2, selectY2);
+      //   // FillRect(hdc, &qwe, hBrush);
 
-        // TextOut(hdc, 0, 0, "Hello, Windows!", 15);
+      //   // TextOut(hdc, 0, 0, "Hello, Windows!", 15);
 
-        // DrawRectangle(hwnd, selectX1, selectY1, selectX2, selectY2);
-        // InvalidateRect(hwnd, NULL, true);
-        // UpdateWindow(hwnd);
+      //   // DrawRectangle(hwnd, selectX1, selectY1, selectX2, selectY2);
+      //   // InvalidateRect(hwnd, NULL, true);
+      //   // UpdateWindow(hwnd);
 
-        EndPaint(hwnd, &ps);
-        // return 0;
-      }
+      //   EndPaint(hwnd, &ps);
+      //   // return 0;
+      // }
 
-      break;
+      // break;
     }
 
-    default:
+    default:{
       return DefWindowProc(hwnd, msg, wParam, lParam);
+    }
   }
   return 0;
 }
@@ -196,26 +355,8 @@ BOOL CALLBACK MonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMoni
 }
 
 void Reeeeeee(const Nan::FunctionCallbackInfo<v8::Value>& info){
-  std::cout << "Enter: Reeeeeee\n";
   HINSTANCE hInstance = GetModuleHandle(NULL);
   MSG Msg;
-
-  WNDCLASS winclass;
-  winclass.style = CS_DBLCLKS | CS_OWNDC | CS_HREDRAW | CS_VREDRAW;
-  winclass.lpfnWndProc = WindowProc;
-  winclass.cbClsExtra = 0;
-  winclass.cbWndExtra = 0;
-  winclass.hInstance = hInstance;
-  winclass.hIcon = LoadIcon(NULL, IDI_APPLICATION);
-  winclass.hCursor = LoadCursor(NULL, IDC_ARROW);
-  winclass.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
-  winclass.lpszMenuName = NULL;
-  winclass.lpszClassName = "Win Class Name";
-
-  if(!RegisterClass(&winclass)){
-    std::cout << "Class not registered\n";
-    return;
-  }
 
   EnumDisplayMonitors(NULL, NULL, MonitorEnumProc, 0);
   int maskWidth  = largestRight  - smallestLeft;
@@ -233,37 +374,112 @@ void Reeeeeee(const Nan::FunctionCallbackInfo<v8::Value>& info){
   maskWidth    = 300;
   maskHeight   = 300;
 
-  HWND hwnd = CreateWindowEx(
+  WNDCLASS winClassTop;
+  winClassTop.style = CS_DBLCLKS | CS_OWNDC | CS_HREDRAW | CS_VREDRAW;
+  winClassTop.lpfnWndProc = WindowProcTop;
+  winClassTop.cbClsExtra = 0;
+  winClassTop.cbWndExtra = 0;
+  winClassTop.hInstance = hInstance;
+  winClassTop.hIcon = LoadIcon(NULL, IDI_APPLICATION);
+  winClassTop.hCursor = LoadCursor(NULL, IDC_ARROW);
+  winClassTop.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
+  winClassTop.lpszMenuName = NULL;
+  winClassTop.lpszClassName = "winClassTop";
+
+  WNDCLASS winClassBot;
+  winClassBot.style = CS_DBLCLKS | CS_OWNDC | CS_HREDRAW | CS_VREDRAW;
+  winClassBot.lpfnWndProc = WindowProcBot;
+  winClassBot.cbClsExtra = 0;
+  winClassBot.cbWndExtra = 0;
+  winClassBot.hInstance = hInstance;
+  winClassBot.hIcon = LoadIcon(NULL, IDI_APPLICATION);
+  winClassBot.hCursor = LoadCursor(NULL, IDC_ARROW);
+  winClassBot.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
+  winClassBot.lpszMenuName = NULL;
+  winClassBot.lpszClassName = "winClassBot";
+
+  RegisterClass(&winClassTop);
+  RegisterClass(&winClassBot);
+
+  // IMPORTANT! The order that these HWND variables are defined determines what order
+  // the windows appear. The first HWND variable will appear beneath the other HWNDs
+  // and the last HWND variable will appear above all other HWMDs.
+
+  hwndBot = CreateWindowEx(
     // 1. Allows better window functionality
     // 2. Makes sure the that window is always on top
     // 3. Hides the program when the user alt-tabs
     WS_EX_LAYERED | WS_EX_TOPMOST | WS_EX_TOOLWINDOW,
-    "Win Class Name",
-    "Hello World",
+    "winClassBot",
+    "Bot",
+    // 1. Make it a popup window which removes all borders/menu items from it
+    // 2. Set the window to initially be visible
     WS_POPUP | WS_VISIBLE,
-    smallestLeft,
-    smallestTop,
-    maskWidth,
-    maskHeight,
+    600,
+    400,
+    200,
+    200,
+    // smallestLeft,
+    // smallestTop,
+    // maskWidth,
+    // maskHeight,
     NULL,
     NULL,
     hInstance,
     NULL);
 
-  if(hwnd == NULL){
-    std::cout << "HWND was not created";
-    return;
-  }
+  hwndTop = CreateWindowEx(
+    // 1. Allows better window functionality
+    // 2. Makes sure the that window is always on top
+    // 3. Hides the program when the user alt-tabs
+    WS_EX_LAYERED | WS_EX_TOPMOST | WS_EX_TOOLWINDOW,
+    "winClassTop",
+    "Top",
+    // 1. Make it a popup window which removes all borders/menu items from it
+    // 2. Set the window to initially be visible
+    WS_POPUP | WS_VISIBLE,
+    600,
+    400,
+    200,
+    200,
+    NULL,
+    NULL,
+    hInstance,
+    NULL);
 
-  // Make the window transparent
-  int barelyVisible = 255; // Change this to 1 later
-  SetLayeredWindowAttributes(hwnd, NULL, barelyVisible, LWA_ALPHA);
+  SetLayeredWindowAttributes(hwndTop, NULL, 1,   LWA_ALPHA);
+  SetLayeredWindowAttributes(hwndBot, NULL, 120, LWA_ALPHA);
+
+  /////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  // HDC hdc = GetDC(NULL); // Should the paramter be NULL or hwnd?
+  // HDC hDC = CreateCompatibleDC(hdc);
+  // POINT ptPos = {20, 20};
+  // POINT ptSrc = {0, 0};
+  // SIZE sizeWnd = {30, 20};
+
+  // BLENDFUNCTION blend = {0};
+  // blend.BlendOp = AC_SRC_OVER;
+  // blend.SourceConstantAlpha = 255;
+  // blend.AlphaFormat = AC_SRC_ALPHA;
+
+  // UpdateLayeredWindow(hwnd, hdc, &ptPos, &sizeWnd, hDC, &ptSrc, 0, &blend, ULW_ALPHA);
+  /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   // Change the background color of the window
-  HBRUSH brush = CreateSolidBrush(RGB(255, 255, 255));
-  SetClassLongPtr(hwnd, GCLP_HBRBACKGROUND, (LONG)brush);
+  HBRUSH brushTop = CreateSolidBrush(RGB(255, 255, 255));
+  HBRUSH brushBot = CreateSolidBrush(RGB(0, 0, 0));
+  SetClassLongPtr(hwndTop, GCLP_HBRBACKGROUND, (LONG)brushTop);
+  SetClassLongPtr(hwndBot, GCLP_HBRBACKGROUND, (LONG)brushBot);
 
-  ShowWindow(hwnd, SW_SHOW);
+  ShowWindow(hwndTop, SW_SHOW);
+  ShowWindow(hwndBot, SW_SHOW);
+
+  // HRGN hrgn = CreateRectRgn(20, 20, 50, 40);
+  // int result = SetWindowRgn(hwnd, hrgn, true);
+  // std::cout << "================================\n";
+  // std::cout << result;
+  // std::cout << "================================\n";
+
   // UpdateWindow(hwnd);
   // DrawRectangle(hwnd, 0, 0);
 
@@ -280,8 +496,6 @@ void Reeeeeee(const Nan::FunctionCallbackInfo<v8::Value>& info){
   }
 
   std::cout << "5\n";
-
-  // return Msg.wParam
   return;
 }
 

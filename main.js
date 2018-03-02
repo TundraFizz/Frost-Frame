@@ -77,5 +77,4 @@ app.on("activate", () => {
 // code. You can also put them in separate files and require them here.
 
 const yolo = require("./build/Release/pow");
-console.log(yolo.pow(4, 2));
 yolo.Reeeeeee();
