@@ -145,7 +145,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam){
         std::cout << "Painting\n";
         hdc = BeginPaint(hwnd, &ps);
 
-        // DrawRectangle(hwnd, selectX1, selectY1, selectX2, selectY2);
+        DrawRectangle(hwnd, selectX1, selectY1, selectX2, selectY2);
         // FillRect(hdc, &qwe, hBrush);
 
         // TextOut(hdc, 0, 0, "Hello, Windows!", 15);
@@ -228,14 +228,21 @@ void Reeeeeee(const Nan::FunctionCallbackInfo<v8::Value>& info){
   std::cout << "maskWidth    : " << maskWidth     << "\n";
   std::cout << "maskHeight   : " << maskHeight    << "\n";
 
+  smallestLeft = 100;
+  smallestTop  = 100;
+  maskWidth    = 300;
+  maskHeight   = 300;
+
   HWND hwnd = CreateWindowEx(
-    WS_EX_LAYERED,
+    // 1. Allows better window functionality
+    // 2. Makes sure the that window is always on top
+    // 3. Hides the program when the user alt-tabs
+    WS_EX_LAYERED | WS_EX_TOPMOST | WS_EX_TOOLWINDOW,
     "Win Class Name",
     "Hello World",
     WS_POPUP | WS_VISIBLE,
-    // WS_POPUP | WS_VISIBLE,
-    // WS_OVERLAPPEDWINDOW | WS_VISIBLE,
-    0, 0,
+    smallestLeft,
+    smallestTop,
     maskWidth,
     maskHeight,
     NULL,
@@ -249,7 +256,8 @@ void Reeeeeee(const Nan::FunctionCallbackInfo<v8::Value>& info){
   }
 
   // Make the window transparent
-  SetLayeredWindowAttributes(hwnd, NULL, 128, LWA_ALPHA);
+  int barelyVisible = 255; // Change this to 1 later
+  SetLayeredWindowAttributes(hwnd, NULL, barelyVisible, LWA_ALPHA);
 
   // Change the background color of the window
   HBRUSH brush = CreateSolidBrush(RGB(255, 255, 255));
