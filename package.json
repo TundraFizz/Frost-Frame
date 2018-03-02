@@ -1,15 +1,18 @@
 {
   "name": "electron-hello-world",
   "version": "1.0.0",
+  "gypfile": true,
   "description": "Sample hello world example for Electron.",
   "main": "main.js",
   "author": "Tundra Fizz",
   "license": "ISC",
   "dependencies": {
     "electron": "latest",
+    "electron-rebuild": "^1.7.3",
     "jquery": "latest",
     "nan": "latest",
-    "electron-rebuild": "^1.7.3"
+    "streaming-worker": "^1.0.1",
+    "streaming-worker-sdk": "^0.9.3"
   },
   "devDependencies": {
     "electron-rebuild": "^1.7.3"

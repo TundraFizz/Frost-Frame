@@ -21,3 +21,13 @@ class Simple : public StreamingWorker {
       }
     }
 };
+
+StreamingWorker * create_worker(Callback *data
+    , Callback *complete
+    , Callback *error_callback,
+    v8::Local<v8::Object> & options) {
+
+ return new Simple(data, complete, error_callback, options);
+}
+
+NODE_MODULE(simple_streample, StreamWorkerWrapper::Init)
