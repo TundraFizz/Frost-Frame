@@ -1,12 +1,43 @@
 #include <nan.h>
 #include <cmath>
 #include <windows.h>
+#include <windowsx.h>
 #include <iostream>
 #include <ole2.h>
 #include <olectl.h>
 #include <gdiplus.h>
 #pragma comment (lib,"Gdiplus.lib")
 
+int selectX1   = 0;
+int selectY1   = 0;
+int selectX2   = 0;
+int selectY2   = 0;
+int mouseStep  = 0;
+bool mouseDown = false;
+
+void DrawRectangle(HWND hwnd, int x1, int y1, int x2, int y2){
+  HDC hdc = GetDC(hwnd);
+
+  int upperLeftX  = 0;
+  int upperLeftY  = 0;
+  int lowerRightX = 0;
+  int lowerRightY = 0;
+
+  if(x1 < x2) upperLeftX = x1;
+  else        upperLeftX = x2;
+
+  if(y1 < y2) upperLeftY = y1;
+  else        upperLeftY = y2;
+
+  if(x1 > x2) lowerRightX = x1;
+  else        lowerRightX = x2;
+
+  if(y1 > y2) lowerRightY = y1;
+  else        lowerRightY = y2;
+
+  Rectangle(hdc, upperLeftX, upperLeftY, lowerRightX, lowerRightY);
+  ReleaseDC(hwnd, hdc);
+}
 
 int GetEncoderClsid(const WCHAR* format, CLSID* pClsid){
   UINT num  = 0; // number of image encoders
@@ -39,17 +70,34 @@ int GetEncoderClsid(const WCHAR* format, CLSID* pClsid){
 }
 
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam){
+
+  // HBRUSH hBrush = CreateSolidBrush(RGB(200,200,200));
+  PAINTSTRUCT ps;
+  HDC hdc;
+
+  RECT qwe;
+  qwe.left   = 100;
+  qwe.top    = 100;
+  qwe.right  = 400;
+  qwe.bottom = 250;
+
+  // ps.hdc     = GetDC(hwnd);
+  // ps.rcPaint = qwe;
+  // ps.fErase  = true;
+
   switch(msg){
 
-    case WM_CLOSE:
+    case WM_CLOSE:{
       DestroyWindow(hwnd);
-    break;
+      break;
+    }
 
-    case WM_DESTROY:
+    case WM_DESTROY:{
       PostQuitMessage(0);
-    break;
+      break;
+    }
 
-    case WM_SETCURSOR:
+    case WM_SETCURSOR:{
       if(LOWORD(lParam) == HTCLIENT){
         HINSTANCE instance;
         LPCTSTR   cursor;
@@ -61,7 +109,57 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam){
 
         return true;
       }
-    break; // default non-client cursor processing
+      break;
+    }
+
+    case WM_LBUTTONDOWN:{
+      selectX1 = GET_X_LPARAM(lParam);
+      selectY1 = GET_Y_LPARAM(lParam);
+      mouseStep = 1;
+      break;
+    }
+
+    case WM_LBUTTONUP:{
+      // int xPos = GET_X_LPARAM(lParam);
+      // int yPos = GET_Y_LPARAM(lParam);
+      mouseStep = 0;
+      // CloseWindow(hwnd);
+      break;
+    }
+
+    case WM_MOUSEMOVE:{
+      if(mouseStep == 1 || mouseStep == 2){
+        selectX2 = GET_X_LPARAM(lParam);
+        selectY2 = GET_Y_LPARAM(lParam);
+        mouseStep = 2;
+        InvalidateRect(hwnd, NULL, false);
+        // DrawRectangle(hwnd, selectX1, selectY1, selectX2, selectY2);
+        // UpdateWindow(hwnd);
+      }
+      break;
+    }
+
+   case WM_PAINT:{
+      if(mouseStep == 2){
+        // mDC = BeginPaint(hwnd, &ps);
+        std::cout << "Painting\n";
+        hdc = BeginPaint(hwnd, &ps);
+
+        // DrawRectangle(hwnd, selectX1, selectY1, selectX2, selectY2);
+        // FillRect(hdc, &qwe, hBrush);
+
+        // TextOut(hdc, 0, 0, "Hello, Windows!", 15);
+
+        // DrawRectangle(hwnd, selectX1, selectY1, selectX2, selectY2);
+        // InvalidateRect(hwnd, NULL, true);
+        // UpdateWindow(hwnd);
+
+        EndPaint(hwnd, &ps);
+        // return 0;
+      }
+
+      break;
+    }
 
     default:
       return DefWindowProc(hwnd, msg, wParam, lParam);
@@ -158,7 +256,8 @@ void Reeeeeee(const Nan::FunctionCallbackInfo<v8::Value>& info){
   SetClassLongPtr(hwnd, GCLP_HBRBACKGROUND, (LONG)brush);
 
   ShowWindow(hwnd, SW_SHOW);
-  UpdateWindow(hwnd);
+  // UpdateWindow(hwnd);
+  // DrawRectangle(hwnd, 0, 0);
 
   return;
 
