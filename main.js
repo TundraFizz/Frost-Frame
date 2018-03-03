@@ -99,20 +99,15 @@ app.on("test", (arg) => {
   var worker = require("streaming-worker");
   var through = require("through");
   var addon_path = path.join(__dirname, "build/Release/pow");
-  const eo = worker(addon_path);
-  eo.to.emit("go", 10);
+  var eo = worker(addon_path);
+  eo.to.emit(null, 3);
 
-  setTimeout(function(){
-    eo.to.emit("start", 20);
-    eo.to.emit("start", -1);
-  }, 5000);
-
-  eo.from.on('even_event', function(value){
-    console.log("EVEN:  " + value);
+  eo.from.on("event_1", function(value){
+    console.log("Event 1:", value);
   });
 
-  eo.from.on('odd_event', function(value){
-    console.log("ODD:   " + value);
+  eo.from.on("event_2", function(value){
+    console.log("Event 2:", value);
   });
 });
 ///////////////////////////////////////

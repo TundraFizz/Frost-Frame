@@ -422,14 +422,15 @@ void Init(v8::Local<v8::Object> exports){
 // class Simple: public StreamingWorker {
 //   public:
 
-//   Simple(Callback *data, Callback *complete, Callback *error_callback, v8::Local<v8::Object> &options):StreamingWorker(data, complete, error_callback){
+//   Simple(Callback *data, Callback *complete, Callback *error_callback, v8::Local<v8::Object> &options):
+//   StreamingWorker(data, complete, error_callback){
 //     // Nothing needs to be here, just make sure you call the base constructor.
 //     // The options parameter is for your JavaScript code to pass in an options object.
 //     // You can use this for whatever you want.
 //   }
 
 //   // You must match the call signature here, "Execute" is a virtual function defined on Streaming Worker
-//   void Execute(const AsyncProgressWorker::ExecutionProgress& progress){
+//   void Execute(const AsyncProgressWorker::ExecutionProgress &progress){
 //     // Example: send 100 integers and stop
 //     for(int i = 0; i < 100; i++){
 //       Message tosend("integer", std::to_string(i));
@@ -451,50 +452,55 @@ void Init(v8::Local<v8::Object> exports){
 
 using namespace std;
 
-class EvenOdd : public StreamingWorker {
+class TestingSomething : public StreamingWorker {
   public:
-    EvenOdd(Callback *data
-      , Callback *complete
-      , Callback *error_callback,
-      v8::Local<v8::Object> & options) : StreamingWorker(data, complete, error_callback){
 
-      start = 0;
-      if (options->IsObject() ) {
-        v8::Local<v8::Value> start_ = options->Get(New<v8::String>("start").ToLocalChecked());
-        if ( start_->IsNumber() ) {
-          start = start_->NumberValue();
-        }
-      }
-    }
-    ~EvenOdd(){}
+  TestingSomething(Callback *data, Callback *complete, Callback *error_callback, v8::Local<v8::Object> &options):
+  StreamingWorker(data, complete, error_callback){
+    // Constructor function, initialize data here
+    start = 0;
+    // if(options->IsObject()){
+    //   v8::Local<v8::Value> start_ = options->Get(New<v8::String>("start").ToLocalChecked());
+    //   if(start_->IsNumber()){
+    //     start = start_->NumberValue();
+    //   }
+    // }
+  }
+  ~TestingSomething(){}
 
-    void Execute (const AsyncProgressWorker::ExecutionProgress& progress) {
-      int max ;
-      do {
-        Message m = fromNode.read();
-        max = std::stoi(m.data);
-        for (int i = start; i <= max; ++i) {
-          string event = (i % 2 == 0 ? "even_event" : "odd_event");
-          Message tosend(event, std::to_string(i));
-          writeToNode(progress, tosend);
-          std::this_thread::sleep_for(chrono::milliseconds(100));
-        }
-      } while (max >= 0);
+  void Execute(const AsyncProgressWorker::ExecutionProgress &progress){
+
+    Message m = fromNode.read();
+    int max = std::stoi(m.data);
+
+    for(int i = 0; i < max; i++){
+      Message tosend("event_1", std::to_string(i));
+      writeToNode(progress, tosend);
+      std::this_thread::sleep_for(chrono::milliseconds(100));
     }
+
+    // int max;
+    // do{
+
+    //   for(int i = start; i <= max; ++i){
+
+    //     Message tosend("event_1", std::to_string(i));
+    //     writeToNode(progress, tosend);
+    //     std::this_thread::sleep_for(chrono::milliseconds(100));
+    //   }
+    // } while (max >= 0);
+  }
+
   private:
-    int start;
+  int start;
 };
 
-// Important:  You MUST include this function, and you cannot alter
-//             the signature at all.  The base wrapper class calls this
-//             to build your particular worker.  The prototype for this
-//             function is defined in addon-streams.h
-StreamingWorker * create_worker(Callback *data
-    , Callback *complete
-    , Callback *error_callback, v8::Local<v8::Object> & options) {
- return new EvenOdd(data, complete, error_callback, options);
+// Important:  You MUST include this function, and you cannot alter the signature at all
+// The base wrapper class calls this to build your particular worker
+// The prototype for this function is defined in addon-streams.h
+StreamingWorker *create_worker(Callback *data, Callback *complete, Callback *error_callback, v8::Local<v8::Object> & options){
+  return new TestingSomething(data, complete, error_callback, options);
 }
 
-// Don't forget this!  You can change the name of your module,
-// but the second parameter should always be as shown.
+// Don't forget this!  You can change the name of your module, but the second parameter should always be as shown.
 NODE_MODULE(even_odd_worker, StreamWorkerWrapper::Init)
