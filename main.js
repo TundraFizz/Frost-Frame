@@ -92,24 +92,49 @@ ipcMain.on("sync", (event, arg) => {
     mainWindow.webContents.send("ping", 5);
 });
 
+///////////////////////////////////////
+app.on("test", (arg) => {
+  console.log(arg);
+
+  var worker = require("streaming-worker");
+  var through = require("through");
+  var addon_path = path.join(__dirname, "build/Release/pow");
+  const eo = worker(addon_path);
+  eo.to.emit("go", 10);
+
+  setTimeout(function(){
+    eo.to.emit("start", 20);
+    eo.to.emit("start", -1);
+  }, 5000);
+
+  eo.from.on('even_event', function(value){
+    console.log("EVEN:  " + value);
+  });
+
+  eo.from.on('odd_event', function(value){
+    console.log("ODD:   " + value);
+  });
+});
+///////////////////////////////////////
+
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and require them here.
 
-if(1){
+if(0){
 
 const yolo = require("./build/Release/pow");
 console.log(yolo.Reeeeeee());
 
 }else{
 
-const worker = require("streaming-worker");
-const addon_path = path.join(__dirname, "./build/Release/pow");
-const simple_stream = worker(addon_path);
+// const worker = require("streaming-worker");
+// const addon_path = path.join(__dirname, "./build/Release/pow");
+// const simple_stream = worker(addon_path);
 
 // console.log(simple_stream.pow(4, 2));
 
-simple_stream.from.on("integer", function(value){
-    console.log(value);
-});
+// simple_stream.from.on("integer", function(value){
+//   console.log(value);
+// });
 
 }

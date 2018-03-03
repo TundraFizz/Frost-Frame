@@ -12,7 +12,8 @@
     "jquery": "latest",
     "nan": "latest",
     "streaming-worker": "^1.0.1",
-    "streaming-worker-sdk": "^0.9.3"
+    "streaming-worker-sdk": "^0.9.3",
+    "through": "^2.3.8"
   },
   "devDependencies": {
     "electron-rebuild": "^1.7.3"
