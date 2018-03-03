@@ -1,5 +1,5 @@
 "use strict"
-const {app, BrowserWindow} = require("electron");
+const {app, BrowserWindow, ipcMain} = require("electron");
 const path = require("path");
 const url  = require("url");
 let $      = require("jquery");
@@ -35,7 +35,7 @@ function createWindow(){
     // in an array if your app supports multi windows, this is the time
     // when you should delete the corresponding element.
     win = null
-  })
+  });
 }
 
 // This method will be called when Electron has finished
@@ -64,7 +64,7 @@ app.on("window-all-closed", () => {
   if (process.platform !== "darwin") {
     app.quit()
   }
-})
+});
 
 app.on("activate", () => {
   // On macOS it's common to re-create a window in the app when the
@@ -72,7 +72,25 @@ app.on("activate", () => {
   if (win === null) {
     createWindow()
   }
-})
+});
+
+// Listen for async message from renderer process
+ipcMain.on("async", (event, arg) => {
+    // Print 1
+    console.log(arg);
+    // Reply on async message from renderer process
+    event.sender.send("async-reply", 2);
+});
+
+// Listen for sync message from renderer process
+ipcMain.on("sync", (event, arg) => {
+    // Print 3
+    console.log(arg);
+    // Send value synchronously back to renderer process
+    event.returnValue = 4;
+    // Send async message to renderer process
+    mainWindow.webContents.send("ping", 5);
+});
 
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and require them here.
