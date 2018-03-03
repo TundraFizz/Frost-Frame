@@ -95,15 +95,21 @@ ipcMain.on("sync", (event, arg) => {
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and require them here.
 
-// const yolo = require("./build/Release/pow");
-// console.log(yolo.pow(4, 2));
-// console.log(yolo.Reeeeeee());
+if(1){
 
+const yolo = require("./build/Release/pow");
+console.log(yolo.Reeeeeee());
+
+}else{
 
 const worker = require("streaming-worker");
-const addon_path = path.join(__dirname, "./build/Release/simple_stream");
+const addon_path = path.join(__dirname, "./build/Release/pow");
 const simple_stream = worker(addon_path);
 
-simple_stream.from.on('integer', function(value){
+// console.log(simple_stream.pow(4, 2));
+
+simple_stream.from.on("integer", function(value){
     console.log(value);
 });
+
+}

@@ -4,13 +4,10 @@ Installing the build tools must be done in a command prompt with administrative 
 npm i -g --production windows-build-tools
 npm i -g node-gyp
 
-npm install --save nan
+==================================================
 
 npm i
-./node_modules/.bin/electron-rebuild; npm start
-
-Run this every time you change the C++ code
-node-gyp clean
+npm run everything
 
 ==================================================
 
