@@ -16,7 +16,7 @@
 
 
 
-
+bool itIsTime = false;
 
 HWND hwndTop;
 HWND hwndBot;
@@ -168,11 +168,15 @@ int ConvertBmpToPng(){
 LRESULT CALLBACK WindowProcTop(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam){
   switch(msg){
     case WM_CLOSE:{
+      std::cout << "CLOSE\n";
+      itIsTime = true;
       DestroyWindow(hwnd);
       break;
     }
 
     case WM_DESTROY:{
+      std::cout << "DESTORY\n";
+      itIsTime = true;
       PostQuitMessage(0);
       break;
     }
@@ -251,6 +255,13 @@ LRESULT CALLBACK WindowProcTop(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam
         UpdateWindow(hwndBot);
       }
       break;
+    }
+
+    case WM_PAINT:{
+      PAINTSTRUCT ps;
+      BeginPaint(hwnd, &ps);
+      EndPaint(hwnd, &ps);
+      return 0;
     }
 
     default:
@@ -397,6 +408,71 @@ void Reeeeeeeee(){
   ShowWindow(hwndBot, SW_SHOW);
 }
 
+void OneSmallWindow(){
+  HINSTANCE hInstance = GetModuleHandle(NULL);
+  MSG Msg;
+
+  EnumDisplayMonitors(NULL, NULL, MonitorEnumProc, 0);
+  int maskWidth  = largestRight  - smallestLeft;
+  int maskHeight = largestBottom - smallestTop;
+  std::cout << "========== Monitor Information ==========\n";
+  std::cout << "smallestLeft : " << smallestLeft  << "\n";
+  std::cout << "smallestTop  : " << smallestTop   << "\n";
+  std::cout << "largestRight : " << largestRight  << "\n";
+  std::cout << "largestBottom: " << largestBottom << "\n";
+  std::cout << "maskWidth    : " << maskWidth     << "\n";
+  std::cout << "maskHeight   : " << maskHeight    << "\n";
+
+  WNDCLASS winClassTop;
+  winClassTop.style = CS_DBLCLKS | CS_OWNDC | CS_HREDRAW | CS_VREDRAW;
+  winClassTop.lpfnWndProc = WindowProcTop;
+  winClassTop.cbClsExtra = 0;
+  winClassTop.cbWndExtra = 0;
+  winClassTop.hInstance = hInstance;
+  winClassTop.hIcon = LoadIcon(NULL, IDI_APPLICATION);
+  winClassTop.hCursor = LoadCursor(NULL, IDC_ARROW);
+  winClassTop.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
+  winClassTop.lpszMenuName = NULL;
+  winClassTop.lpszClassName = "winClassTop";
+
+  RegisterClass(&winClassTop);
+
+  // IMPORTANT! The order that these HWND variables are defined determines what order
+  // the windows appear. The first HWND variable will appear beneath the other HWNDs
+  // and the last HWND variable will appear above all other HWMDs.
+
+  hwndTop = CreateWindowEx(
+    // 1. Allows better window functionality
+    // 2. Makes sure the that window is always on top
+    // 3. Hides the program when the user alt-tabs
+    WS_EX_LAYERED | WS_EX_TOPMOST | WS_EX_TOOLWINDOW,
+    "winClassTop",
+    "Top",
+    // 1. Make it a popup window which removes all borders/menu items from it
+    // 2. Set the window to initially be visible
+    WS_POPUP | WS_VISIBLE,
+    300,
+    300,
+    400,
+    250,
+    NULL,
+    NULL,
+    hInstance,
+    NULL);
+
+  SetLayeredWindowAttributes(hwndTop, NULL, 1,   LWA_ALPHA);
+  std::cout << "SetLayeredWindowAttributes()\n";
+
+  // Change background colors of the windows
+  HBRUSH brushTop = CreateSolidBrush(RGB(255, 255, 255));
+  HBRUSH brushBot = CreateSolidBrush(RGB(0, 0, 0));
+  SetClassLongPtr(hwndTop, GCLP_HBRBACKGROUND, (LONG)brushTop);
+  std::cout << "SetClassLongPtr()\n";
+
+  ShowWindow(hwndTop, SW_SHOW);
+  std::cout << "ShowWindow()\n";
+}
+
 void YoloSwag(){
   std::cout << "klsdjfsjklfjsdjklfklsdjfjkl\n";
   std::cout << "klsdjfsjklfjsdjklfklsdjfjkl\n";
@@ -426,6 +502,54 @@ NAN_METHOD(MyAsyncBinding::DoSyncStuff) {
   info.GetReturnValue().Set(Nan::New(workerId).ToLocalChecked());
 }
 
+void TestingWindow(){
+  HINSTANCE hInstance = GetModuleHandle(NULL);
+  WNDCLASSEX wc;
+  HWND hwnd;
+
+  wc.cbSize        = sizeof(WNDCLASSEX);
+  wc.style         = 0;
+  wc.lpfnWndProc   = WindowProcTop;
+  wc.cbClsExtra    = 0;
+  wc.cbWndExtra    = 0;
+  wc.hInstance     = hInstance;
+  wc.hIcon         = LoadIcon(NULL, IDI_APPLICATION);
+  wc.hCursor       = LoadCursor(NULL, IDC_ARROW);
+  wc.hbrBackground = (HBRUSH)(COLOR_WINDOW+1);
+  wc.lpszMenuName  = NULL;
+  wc.lpszClassName = "g_szClassName";
+  wc.hIconSm       = LoadIcon(NULL, IDI_APPLICATION);
+
+  if(!RegisterClassEx(&wc)){
+    MessageBox(NULL, "Window Registration Failed!", "Error!",
+        MB_ICONEXCLAMATION | MB_OK);
+    return;
+  }
+
+  hwnd = CreateWindowEx(
+    WS_EX_CLIENTEDGE,
+    "g_szClassName",
+    "The title of my window",
+    WS_OVERLAPPEDWINDOW,
+    CW_USEDEFAULT, CW_USEDEFAULT, 240, 120,
+    NULL, NULL, hInstance, NULL);
+
+  if(hwnd == NULL){
+    MessageBox(NULL, "Window Creation Failed!", "Error!", MB_ICONEXCLAMATION | MB_OK);
+    return;
+  }
+
+  ShowWindow(hwnd, SW_SHOW);
+  UpdateWindow(hwnd);
+
+  MSG message;
+
+  while(GetMessage(&message, NULL, 0, 0)){
+    TranslateMessage(&message);
+    DispatchMessage(&message);
+  }
+}
+
 class MyAsyncWorker : public Nan::AsyncWorker {
 public:
   std::string myString;
@@ -446,14 +570,15 @@ public:
     std::cout << "Bool  : " << myBool   << "\n";
     std::cout << "====== Execute End ======\n";
     std::cout << "3...\n";
-    Reeeeeeeee();
-    Sleep(1000);
-    std::cout << "2...\n";
-    Sleep(1000);
-    std::cout << "1...\n";
-    Sleep(1000);
-    std::cout << "Go\n";
-    YoloSwag();
+
+    // Reeeeeeeee();
+    // OneSmallWindow();
+    TestingWindow();
+
+    while(itIsTime == false){
+      std::cout << "Waiting...\n";
+      Sleep(200);
+    }
   }
 
   void HandleOKCallback(){
