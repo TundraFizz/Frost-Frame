@@ -6,8 +6,17 @@
 #include <ole2.h>
 #include <olectl.h>
 #include <gdiplus.h>
-#include "streaming-worker.h"
+// #include "streaming-worker.h"
 #pragma comment (lib,"Gdiplus.lib")
+
+#include "MyAsyncBinding.h"
+
+
+
+
+
+
+
 
 HWND hwndTop;
 HWND hwndBot;
@@ -291,7 +300,7 @@ BOOL CALLBACK MonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMoni
   return true;
 }
 
-void Reeeeeee(const Nan::FunctionCallbackInfo<v8::Value>& info){
+void Reeeeeeeee(){
   HINSTANCE hInstance = GetModuleHandle(NULL);
   MSG Msg;
 
@@ -386,121 +395,85 @@ void Reeeeeee(const Nan::FunctionCallbackInfo<v8::Value>& info){
 
   ShowWindow(hwndTop, SW_SHOW);
   ShowWindow(hwndBot, SW_SHOW);
-
-  info.GetReturnValue().Set(123456);
 }
 
-void Pow(const Nan::FunctionCallbackInfo<v8::Value>& info){
-  if(info.Length() < 2){
-    Nan::ThrowTypeError("Wrong number of arguments");
-    return;
-  }
-
-  if(!info[0]->IsNumber() || !info[1]->IsNumber()){
-    Nan::ThrowTypeError("Both arguments should be numbers");
-    return;
-  }
-
-  double arg0 = info[0]->NumberValue();
-  double arg1 = info[1]->NumberValue();
-  v8::Local<v8::Number> num = Nan::New(pow(arg0, arg1)+5);
-
-  info.GetReturnValue().Set(num);
+void YoloSwag(){
+  std::cout << "klsdjfsjklfjsdjklfklsdjfjkl\n";
+  std::cout << "klsdjfsjklfjsdjklfklsdjfjkl\n";
+  std::cout << "klsdjfsjklfjsdjklfklsdjfjkl\n";
+  std::cout << "klsdjfsjklfjsdjklfklsdjfjkl\n";
+  std::cout << "klsdjfsjklfjsdjklfklsdjfjkl\n";
 }
 
-void Init(v8::Local<v8::Object> exports){
-  exports->Set(Nan::New("pow").ToLocalChecked(),      Nan::New<v8::FunctionTemplate>(Pow)->GetFunction());
-  exports->Set(Nan::New("Reeeeeee").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(Reeeeeee)->GetFunction());
+NAN_MODULE_INIT(MyAsyncBinding::Init) {
+  Nan::SetMethod(target, "doSyncStuff", DoSyncStuff);
+  Nan::SetMethod(target, "doAsyncStuff", DoAsyncStuff);
 }
 
-// NODE_MODULE(pow, Init)
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-// class Simple: public StreamingWorker {
-//   public:
-
-//   Simple(Callback *data, Callback *complete, Callback *error_callback, v8::Local<v8::Object> &options):
-//   StreamingWorker(data, complete, error_callback){
-//     // Nothing needs to be here, just make sure you call the base constructor.
-//     // The options parameter is for your JavaScript code to pass in an options object.
-//     // You can use this for whatever you want.
-//   }
-
-//   // You must match the call signature here, "Execute" is a virtual function defined on Streaming Worker
-//   void Execute(const AsyncProgressWorker::ExecutionProgress &progress){
-//     // Example: send 100 integers and stop
-//     for(int i = 0; i < 100; i++){
-//       Message tosend("integer", std::to_string(i));
-//       writeToNode(progress, tosend);
-//     }
-//   }
-// };
-
-// StreamingWorker *create_worker(Callback *data, Callback *complete, Callback *error_callback, v8::Local<v8::Object> &options){
-//   return new Simple(data, complete, error_callback, options);
-// }
-
-// NODE_MODULE(NULL, StreamWorkerWrapper::Init)
-// // NODE_MODULE(NULL, Init)
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-using namespace std;
-
-class TestingSomething : public StreamingWorker {
-  public:
-
-  TestingSomething(Callback *data, Callback *complete, Callback *error_callback, v8::Local<v8::Object> &options):
-  StreamingWorker(data, complete, error_callback){
-    // Constructor function, initialize data here
-    start = 0;
-    // if(options->IsObject()){
-    //   v8::Local<v8::Value> start_ = options->Get(New<v8::String>("start").ToLocalChecked());
-    //   if(start_->IsNumber()){
-    //     start = start_->NumberValue();
-    //   }
-    // }
+NAN_METHOD(MyAsyncBinding::DoSyncStuff) {
+  if(!info[0]->IsString()) {
+    return Nan::ThrowError(Nan::New("expected arg 0: string workerId").ToLocalChecked());
   }
-  ~TestingSomething(){}
-
-  void Execute(const AsyncProgressWorker::ExecutionProgress &progress){
-
-    Message m = fromNode.read();
-    int max = std::stoi(m.data);
-
-    for(int i = 0; i < max; i++){
-      Message tosend("event_1", std::to_string(i));
-      writeToNode(progress, tosend);
-      std::this_thread::sleep_for(chrono::milliseconds(100));
-    }
-
-    // int max;
-    // do{
-
-    //   for(int i = start; i <= max; ++i){
-
-    //     Message tosend("event_1", std::to_string(i));
-    //     writeToNode(progress, tosend);
-    //     std::this_thread::sleep_for(chrono::milliseconds(100));
-    //   }
-    // } while (max >= 0);
+  if(!info[1]->IsInt32()) {
+    return Nan::ThrowError(Nan::New("expected arg 1: int iterations").ToLocalChecked());
   }
 
-  private:
-  int start;
+  std::string workerId = std::string(*Nan::Utf8String(info[0]->ToString()));
+  int iterations = info[1]->Int32Value();
+
+  // Sleep here
+
+  info.GetReturnValue().Set(Nan::New(workerId).ToLocalChecked());
+}
+
+class MyAsyncWorker : public Nan::AsyncWorker {
+public:
+  std::string myString;
+  int myInt;
+  bool myBool;
+
+  MyAsyncWorker(std::string myString, int myInt, bool myBool, Nan::Callback *callback)
+  : Nan::AsyncWorker(callback){
+    this->myString = myString;
+    this->myInt    = myInt;
+    this->myBool   = myBool;
+  }
+
+  void Execute(){
+    std::cout << "===== Execute Start =====\n";
+    std::cout << "String: " << myString << "\n";
+    std::cout << "Int   : " << myInt    << "\n";
+    std::cout << "Bool  : " << myBool   << "\n";
+    std::cout << "====== Execute End ======\n";
+    std::cout << "3...\n";
+    Reeeeeeeee();
+    Sleep(1000);
+    std::cout << "2...\n";
+    Sleep(1000);
+    std::cout << "1...\n";
+    Sleep(1000);
+    std::cout << "Go\n";
+    YoloSwag();
+  }
+
+  void HandleOKCallback(){
+    std::cout << "HandleOKCallback()\n";
+
+    Nan::HandleScope scope;
+    v8::Local<v8::Value> argv[] = {
+      Nan::Null(), // no error occured
+      Nan::New("abcDEF").ToLocalChecked()
+    };
+
+    callback->Call(2, argv);
+  }
 };
 
-// Important:  You MUST include this function, and you cannot alter the signature at all
-// The base wrapper class calls this to build your particular worker
-// The prototype for this function is defined in addon-streams.h
-StreamingWorker *create_worker(Callback *data, Callback *complete, Callback *error_callback, v8::Local<v8::Object> & options){
-  return new TestingSomething(data, complete, error_callback, options);
+NAN_METHOD(MyAsyncBinding::DoAsyncStuff) {
+  Nan::AsyncQueueWorker(new MyAsyncWorker(
+    std::string(*Nan::Utf8String(info[0]->ToString())),
+    info[1]->Int32Value(),
+    info[2]->BooleanValue(),
+    new Nan::Callback(info[3].As<v8::Function>())
+  ));
 }
-
-// Don't forget this!  You can change the name of your module, but the second parameter should always be as shown.
-NODE_MODULE(even_odd_worker, StreamWorkerWrapper::Init)

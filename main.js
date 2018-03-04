@@ -1,4 +1,3 @@
-"use strict"
 const {app, BrowserWindow, ipcMain} = require("electron");
 const path = require("path");
 const url  = require("url");
@@ -92,44 +91,136 @@ ipcMain.on("sync", (event, arg) => {
     mainWindow.webContents.send("ping", 5);
 });
 
-///////////////////////////////////////
-app.on("test", (arg) => {
-  console.log(arg);
+////////////////////////////////////////////////////////////////////////////////
 
-  var worker = require("streaming-worker");
-  var through = require("through");
-  var addon_path = path.join(__dirname, "build/Release/pow");
-  var eo = worker(addon_path);
-  eo.to.emit(null, 3);
+var m = require("./");
 
-  eo.from.on("event_1", function(value){
-    console.log("Event 1:", value);
+function TestAsync(){return new Promise((resolve) => {
+  m.doAsyncStuff(123, 5, true, function(error, result){
+    console.log("We are now resolving");
+    return resolve(result);
   });
+})}
 
-  eo.from.on("event_2", function(value){
-    console.log("Event 2:", value);
-  });
+TestAsync().then(() => {
+  console.log("Finished the C++ function!");
 });
-///////////////////////////////////////
 
-// In this file you can include the rest of your app's specific main process
-// code. You can also put them in separate files and require them here.
 
-if(0){
 
-const yolo = require("./build/Release/pow");
-console.log(yolo.Reeeeeee());
 
-}else{
 
-// const worker = require("streaming-worker");
-// const addon_path = path.join(__dirname, "./build/Release/pow");
-// const simple_stream = worker(addon_path);
 
-// console.log(simple_stream.pow(4, 2));
 
-// simple_stream.from.on("integer", function(value){
-//   console.log(value);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// var worker = require("streaming-worker");
+// var through = require("through");
+// var addon_path = path.join(__dirname, "./build/Release/pow");
+
+
+// ///////////////////////////////////////
+// app.on("test", (arg) => {
+//   const eo = worker(addon_path, {"start": 123});
+
+//   eo.from.on("event_1", function(value){
+//     console.log("===============================");
+//     console.log(value);
+//   });
 // });
 
-}
+// app.on("test_old", (arg) => {
+//   console.log("NOOOOOOOOOOOOOOOOOOOOOOO");
+
+//   console.log(arg);
+
+//   if(0){
+
+//     var worker = require("streaming-worker");
+//     var through = require("through");
+//     var addon_path = path.join(__dirname, "build/Release/pow");
+//     // var eo = worker(addon_path);
+//     // // eo.to.emit(null, 3);
+
+//     // eo.from.on("event_1", function(value){
+//     //   console.log("Event 1:", value);
+//     // });
+
+//     // eo.from.on("event_2", function(value){
+//     //   console.log("Event 2:", value);
+//     // });
+
+//   }else{
+
+//     const worker = require("streaming-worker");
+//     const addon_path = path.join(__dirname, "./build/Release/pow");
+//     const simple_stream = worker(addon_path);
+
+//     console.log(simple_stream.pow(4, 2));
+
+//     simple_stream.from.on("integer", function(value){
+//       console.log(value);
+//     });
+
+//   }
+// });
+// ///////////////////////////////////////
+
+// // In this file you can include the rest of your app's specific main process
+// // code. You can also put them in separate files and require them here.
+
+// if(1){
+
+// // const yolo = require("./build/Release/pow");
+// // console.log(yolo.Reeeeeee());
+
+// }else{
+
+// // const worker = require("streaming-worker");
+// // const addon_path = path.join(__dirname, "./build/Release/pow");
+// // const simple_stream = worker(addon_path);
+
+// // console.log(simple_stream.pow(4, 2));
+
+// // simple_stream.from.on("integer", function(value){
+// //   console.log(value);
+// // });
+
+// }
