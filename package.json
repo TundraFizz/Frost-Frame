@@ -20,8 +20,9 @@
     "url": "https://github.com/TundraFizz/Tundra-Fizz"
   },
   "scripts": {
-    "build": "node-gyp build",
-    "install": "node-gyp rebuild",
+    "a": "cls && npm run clean && npm run compile && npm start",
+    "clean": "node-gyp clean",
+    "compile": "./node_modules/.bin/electron-rebuild",
     "start": "electron ./main.js"
   }
 }
