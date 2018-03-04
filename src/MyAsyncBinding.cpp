@@ -313,7 +313,6 @@ BOOL CALLBACK MonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMoni
 
 void Reeeeeeeee(){
   HINSTANCE hInstance = GetModuleHandle(NULL);
-  MSG Msg;
 
   EnumDisplayMonitors(NULL, NULL, MonitorEnumProc, 0);
   int maskWidth  = largestRight  - smallestLeft;
@@ -406,6 +405,13 @@ void Reeeeeeeee(){
 
   ShowWindow(hwndTop, SW_SHOW);
   ShowWindow(hwndBot, SW_SHOW);
+
+  MSG message;
+
+  while(GetMessage(&message, NULL, 0, 0)){
+    TranslateMessage(&message);
+    DispatchMessage(&message);
+  }
 }
 
 void OneSmallWindow(){
@@ -571,9 +577,9 @@ public:
     std::cout << "====== Execute End ======\n";
     std::cout << "3...\n";
 
-    // Reeeeeeeee();
+    Reeeeeeeee();
     // OneSmallWindow();
-    TestingWindow();
+    // TestingWindow();
 
     while(itIsTime == false){
       std::cout << "Waiting...\n";
