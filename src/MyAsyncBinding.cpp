@@ -141,28 +141,33 @@ bool screenCapturePart(int x, int y, int w, int h, LPCSTR fname){
     return false;
 }
 
-int ConvertBmpToPng(){
+void ConvertBmpToPng(){
+  ULONG_PTR                    gdiplusToken;
   Gdiplus::GdiplusStartupInput gdiplusStartupInput;
-  ULONG_PTR gdiplusToken;
+
+  // Initializes Windows GDI+, make sure you call GdiplusShutdown when you're done using GDI+
   GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL);
 
-  CLSID  encoderClsid;
+  Gdiplus::Image  *image = new Gdiplus::Image(L"testing.bmp");
   Gdiplus::Status stat;
-  Gdiplus::Image* image = new Gdiplus::Image(L"testing.bmp");
+  CLSID           encoderClsid;
 
-  // Get the CLSID of the PNG encoder.
+  // Get the CLSID of the PNG encoder
   GetEncoderClsid(L"image/png", &encoderClsid);
 
+  // Convert the .bmp file into a .png file
   stat = image->Save(L"testing.png", &encoderClsid, NULL);
 
-  if(stat == Gdiplus::Ok)
-    printf("testing.png was saved successfully\n");
-  else
-    printf("Failure: stat = %d\n", stat);
+  if(stat != Gdiplus::Ok){
+    std::cout << "Error converting .bmp to .png\n";
+    std::cout << "Code: " << stat << "\n";
+  }
 
-  // delete image;
+  // Delete the lock that the program has on the .bmp file (it does NOT delete the file itself)
+  delete image;
+
+  // Clean up resources used by Windows GDI+
   Gdiplus::GdiplusShutdown(gdiplusToken);
-  return 0;
 }
 
 LRESULT CALLBACK WindowProcTop(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam){
@@ -207,8 +212,12 @@ LRESULT CALLBACK WindowProcTop(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam
       selectX2 = GET_X_LPARAM(lParam);
       selectY2 = GET_Y_LPARAM(lParam);
       mouseStep = 0;
-      CloseWindow(hwndTop);
-      CloseWindow(hwndBot);
+
+      SendMessage(hwndBot, WM_CLOSE, 0, NULL);
+      SendMessage(hwndTop, WM_CLOSE, 0, NULL);
+
+      // CloseWindow(hwndBot);
+      // CloseWindow(hwndTop);
 
       int width  = selectX2 - selectX1;
       int height = selectY2 - selectY1;
@@ -479,14 +488,6 @@ void OneSmallWindow(){
   std::cout << "ShowWindow()\n";
 }
 
-void YoloSwag(){
-  std::cout << "klsdjfsjklfjsdjklfklsdjfjkl\n";
-  std::cout << "klsdjfsjklfjsdjklfklsdjfjkl\n";
-  std::cout << "klsdjfsjklfjsdjklfklsdjfjkl\n";
-  std::cout << "klsdjfsjklfjsdjklfklsdjfjkl\n";
-  std::cout << "klsdjfsjklfjsdjklfklsdjfjkl\n";
-}
-
 NAN_MODULE_INIT(MyAsyncBinding::Init) {
   Nan::SetMethod(target, "doSyncStuff", DoSyncStuff);
   Nan::SetMethod(target, "doAsyncStuff", DoAsyncStuff);
@@ -557,7 +558,8 @@ void TestingWindow(){
 }
 
 class MyAsyncWorker : public Nan::AsyncWorker {
-public:
+  public:
+
   std::string myString;
   int myInt;
   bool myBool;
@@ -570,21 +572,17 @@ public:
   }
 
   void Execute(){
-    std::cout << "===== Execute Start =====\n";
+    std::cout << "===== Execute variables =====\n";
     std::cout << "String: " << myString << "\n";
     std::cout << "Int   : " << myInt    << "\n";
     std::cout << "Bool  : " << myBool   << "\n";
-    std::cout << "====== Execute End ======\n";
-    std::cout << "3...\n";
-
+    std::cout << "=============================\n";
     Reeeeeeeee();
-    // OneSmallWindow();
-    // TestingWindow();
 
-    while(itIsTime == false){
-      std::cout << "Waiting...\n";
-      Sleep(200);
-    }
+    // while(itIsTime == false){
+    //   std::cout << "Waiting...\n";
+    //   Sleep(200);
+    // }
   }
 
   void HandleOKCallback(){
@@ -600,7 +598,7 @@ public:
   }
 };
 
-NAN_METHOD(MyAsyncBinding::DoAsyncStuff) {
+NAN_METHOD(MyAsyncBinding::DoAsyncStuff){
   Nan::AsyncQueueWorker(new MyAsyncWorker(
     std::string(*Nan::Utf8String(info[0]->ToString())),
     info[1]->Int32Value(),
