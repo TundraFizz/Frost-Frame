@@ -3,17 +3,14 @@
   "version": "1.0.0",
   "gypfile": true,
   "description": "Sample hello world example for Electron.",
-  "main": "main.js",
+  "main": "bindings.js",
   "author": "Tundra Fizz",
   "license": "ISC",
   "dependencies": {
     "electron": "latest",
     "electron-rebuild": "^1.7.3",
     "jquery": "latest",
-    "nan": "latest",
-    "streaming-worker": "^1.0.1",
-    "streaming-worker-sdk": "^0.9.3",
-    "through": "^2.3.8"
+    "nan": "latest"
   },
   "devDependencies": {
     "electron-rebuild": "^1.7.3"
@@ -23,9 +20,8 @@
     "url": "https://github.com/TundraFizz/Tundra-Fizz"
   },
   "scripts": {
-    "start": "electron .",
-    "compile": "./node_modules/.bin/electron-rebuild",
-    "clean": "node-gyp clean",
-    "everything": "npm run clean && npm run compile && npm run start"
+    "build": "node-gyp build",
+    "install": "node-gyp rebuild",
+    "start": "electron ./main.js"
   }
 }

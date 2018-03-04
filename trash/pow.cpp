@@ -6,8 +6,12 @@
 #include <ole2.h>
 #include <olectl.h>
 #include <gdiplus.h>
-#include "streaming-worker.h"
+// #include "streaming-worker.h"
 #pragma comment (lib,"Gdiplus.lib")
+
+//////////////////////
+// GLOBAL VARIABLES //
+//////////////////////
 
 HWND hwndTop;
 HWND hwndBot;
@@ -291,7 +295,7 @@ BOOL CALLBACK MonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMoni
   return true;
 }
 
-void Reeeeeee(const Nan::FunctionCallbackInfo<v8::Value>& info){
+void Reeeeeee(const Nan::FunctionCallbackInfo<v8::Value> &info){
   HINSTANCE hInstance = GetModuleHandle(NULL);
   MSG Msg;
 
@@ -387,7 +391,7 @@ void Reeeeeee(const Nan::FunctionCallbackInfo<v8::Value>& info){
   ShowWindow(hwndTop, SW_SHOW);
   ShowWindow(hwndBot, SW_SHOW);
 
-  info.GetReturnValue().Set(123456);
+   info.GetReturnValue().Set(123456);
 }
 
 void Pow(const Nan::FunctionCallbackInfo<v8::Value>& info){
@@ -450,57 +454,185 @@ void Init(v8::Local<v8::Object> exports){
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-using namespace std;
+#include <conio.h> // Sleep
+#include <thread>
 
-class TestingSomething : public StreamingWorker {
-  public:
+void foo(){
+  if(true){
+    HINSTANCE hInstance = GetModuleHandle(NULL);
+    MSG Msg;
 
-  TestingSomething(Callback *data, Callback *complete, Callback *error_callback, v8::Local<v8::Object> &options):
-  StreamingWorker(data, complete, error_callback){
-    // Constructor function, initialize data here
-    start = 0;
-    // if(options->IsObject()){
-    //   v8::Local<v8::Value> start_ = options->Get(New<v8::String>("start").ToLocalChecked());
-    //   if(start_->IsNumber()){
-    //     start = start_->NumberValue();
-    //   }
-    // }
+    EnumDisplayMonitors(NULL, NULL, MonitorEnumProc, 0);
+    int maskWidth  = largestRight  - smallestLeft;
+    int maskHeight = largestBottom - smallestTop;
+    std::cout << "========== Monitor Information ==========\n";
+    std::cout << "smallestLeft : " << smallestLeft  << "\n";
+    std::cout << "smallestTop  : " << smallestTop   << "\n";
+    std::cout << "largestRight : " << largestRight  << "\n";
+    std::cout << "largestBottom: " << largestBottom << "\n";
+    std::cout << "maskWidth    : " << maskWidth     << "\n";
+    std::cout << "maskHeight   : " << maskHeight    << "\n";
+
+    WNDCLASS winClassTop;
+    winClassTop.style = CS_DBLCLKS | CS_OWNDC | CS_HREDRAW | CS_VREDRAW;
+    winClassTop.lpfnWndProc = WindowProcTop;
+    winClassTop.cbClsExtra = 0;
+    winClassTop.cbWndExtra = 0;
+    winClassTop.hInstance = hInstance;
+    winClassTop.hIcon = LoadIcon(NULL, IDI_APPLICATION);
+    winClassTop.hCursor = LoadCursor(NULL, IDC_ARROW);
+    winClassTop.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
+    winClassTop.lpszMenuName = NULL;
+    winClassTop.lpszClassName = "winClassTop";
+
+    WNDCLASS winClassBot;
+    winClassBot.style = CS_DBLCLKS | CS_OWNDC | CS_HREDRAW | CS_VREDRAW;
+    winClassBot.lpfnWndProc = WindowProcBot;
+    winClassBot.cbClsExtra = 0;
+    winClassBot.cbWndExtra = 0;
+    winClassBot.hInstance = hInstance;
+    winClassBot.hIcon = LoadIcon(NULL, IDI_APPLICATION);
+    winClassBot.hCursor = LoadCursor(NULL, IDC_ARROW);
+    winClassBot.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
+    winClassBot.lpszMenuName = NULL;
+    winClassBot.lpszClassName = "winClassBot";
+
+    RegisterClass(&winClassTop);
+    RegisterClass(&winClassBot);
+
+    // IMPORTANT! The order that these HWND variables are defined determines what order
+    // the windows appear. The first HWND variable will appear beneath the other HWNDs
+    // and the last HWND variable will appear above all other HWMDs.
+
+    hwndBot = CreateWindowEx(
+      // 1. Allows better window functionality
+      // 2. Makes sure the that window is always on top
+      // 3. Hides the program when the user alt-tabs
+      WS_EX_LAYERED | WS_EX_TOPMOST | WS_EX_TOOLWINDOW,
+      "winClassBot",
+      "Bot",
+      // 1. Make it a popup window which removes all borders/menu items from it
+      // 2. Set the window to initially be visible
+      WS_POPUP | WS_VISIBLE,
+      smallestLeft,
+      smallestTop,
+      maskWidth,
+      maskHeight,
+      NULL,
+      NULL,
+      hInstance,
+      NULL);
+
+    hwndTop = CreateWindowEx(
+      // 1. Allows better window functionality
+      // 2. Makes sure the that window is always on top
+      // 3. Hides the program when the user alt-tabs
+      WS_EX_LAYERED | WS_EX_TOPMOST | WS_EX_TOOLWINDOW,
+      "winClassTop",
+      "Top",
+      // 1. Make it a popup window which removes all borders/menu items from it
+      // 2. Set the window to initially be visible
+      WS_POPUP | WS_VISIBLE,
+      smallestLeft,
+      smallestTop,
+      maskWidth,
+      maskHeight,
+      NULL,
+      NULL,
+      hInstance,
+      NULL);
+
+    SetLayeredWindowAttributes(hwndTop, NULL, 1,   LWA_ALPHA);
+    SetLayeredWindowAttributes(hwndBot, NULL, 120, LWA_ALPHA);
+
+    // Change background colors of the windows
+    HBRUSH brushTop = CreateSolidBrush(RGB(255, 255, 255));
+    HBRUSH brushBot = CreateSolidBrush(RGB(0, 0, 0));
+    SetClassLongPtr(hwndTop, GCLP_HBRBACKGROUND, (LONG)brushTop);
+    SetClassLongPtr(hwndBot, GCLP_HBRBACKGROUND, (LONG)brushBot);
+
+    ShowWindow(hwndTop, SW_SHOW);
+    ShowWindow(hwndBot, SW_SHOW);
   }
-  ~TestingSomething(){}
-
-  void Execute(const AsyncProgressWorker::ExecutionProgress &progress){
-
-    Message m = fromNode.read();
-    int max = std::stoi(m.data);
-
-    for(int i = 0; i < max; i++){
-      Message tosend("event_1", std::to_string(i));
-      writeToNode(progress, tosend);
-      std::this_thread::sleep_for(chrono::milliseconds(100));
-    }
-
-    // int max;
-    // do{
-
-    //   for(int i = start; i <= max; ++i){
-
-    //     Message tosend("event_1", std::to_string(i));
-    //     writeToNode(progress, tosend);
-    //     std::this_thread::sleep_for(chrono::milliseconds(100));
-    //   }
-    // } while (max >= 0);
-  }
-
-  private:
-  int start;
-};
-
-// Important:  You MUST include this function, and you cannot alter the signature at all
-// The base wrapper class calls this to build your particular worker
-// The prototype for this function is defined in addon-streams.h
-StreamingWorker *create_worker(Callback *data, Callback *complete, Callback *error_callback, v8::Local<v8::Object> & options){
-  return new TestingSomething(data, complete, error_callback, options);
 }
 
-// Don't forget this!  You can change the name of your module, but the second parameter should always be as shown.
-NODE_MODULE(even_odd_worker, StreamWorkerWrapper::Init)
+void YoloSwag(){
+  std::cout << "klsdjfsjklfjsdjklfklsdjfjkl\n";
+  std::cout << "klsdjfsjklfjsdjklfklsdjfjkl\n";
+  std::cout << "klsdjfsjklfjsdjklfklsdjfjkl\n";
+  std::cout << "klsdjfsjklfjsdjklfklsdjfjkl\n";
+  std::cout << "klsdjfsjklfjsdjklfklsdjfjkl\n";
+}
+
+NAN_MODULE_INIT(MyAsyncBinding::Init) {
+  Nan::SetMethod(target, "doSyncStuff", DoSyncStuff);
+  Nan::SetMethod(target, "doAsyncStuff", DoAsyncStuff);
+}
+
+NAN_METHOD(MyAsyncBinding::DoSyncStuff) {
+  if(!info[0]->IsString()) {
+    return Nan::ThrowError(Nan::New("expected arg 0: string workerId").ToLocalChecked());
+  }
+  if(!info[1]->IsInt32()) {
+    return Nan::ThrowError(Nan::New("expected arg 1: int iterations").ToLocalChecked());
+  }
+
+  std::string workerId = std::string(*Nan::Utf8String(info[0]->ToString()));
+  int iterations = info[1]->Int32Value();
+
+  // Sleep here
+
+  info.GetReturnValue().Set(Nan::New(workerId).ToLocalChecked());
+}
+
+class MyAsyncWorker : public Nan::AsyncWorker {
+public:
+  std::string myString;
+  int myInt;
+  bool myBool;
+
+  MyAsyncWorker(std::string myString, int myInt, bool myBool, Nan::Callback *callback)
+  : Nan::AsyncWorker(callback){
+    this->myString = myString;
+    this->myInt    = myInt;
+    this->myBool   = myBool;
+  }
+
+  void Execute(){
+    std::cout << "===== Execute Start =====\n";
+    std::cout << "String: " << myString << "\n";
+    std::cout << "Int   : " << myInt    << "\n";
+    std::cout << "Bool  : " << myBool   << "\n";
+    std::cout << "====== Execute End ======\n";
+    std::cout << "3...\n";
+    // Reeeeeeeee();
+    Sleep(1000);
+    std::cout << "2...\n";
+    Sleep(1000);
+    std::cout << "1...\n";
+    Sleep(1000);
+    std::cout << "Go\n";
+    YoloSwag();
+  }
+
+  void HandleOKCallback(){
+    std::cout << "HandleOKCallback()\n";
+
+    Nan::HandleScope scope;
+    v8::Local<v8::Value> argv[] = {
+      Nan::Null(), // no error occured
+      Nan::New("abcDEF").ToLocalChecked()
+    };
+
+    callback->Call(2, argv);
+  }
+};
+
+NAN_METHOD(MyAsyncBinding::DoAsyncStuff) {
+  Nan::AsyncQueueWorker(new MyAsyncWorker(
+    std::string(*Nan::Utf8String(info[0]->ToString())),
+    info[1]->Int32Value(),
+    info[2]->BooleanValue(),
+    new Nan::Callback(info[3].As<v8::Function>())
+  ));
+}

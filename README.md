@@ -11,6 +11,12 @@ npm run everything
 
 ==================================================
 
+node-gyp clean
+./node_modules/.bin/electron-rebuild
+electron .
+
+==================================================
+
 git init
 git add -A
 git commit -m "Initial files"
