@@ -6,15 +6,12 @@
 #include <ole2.h>
 #include <olectl.h>
 #include <gdiplus.h>
+#include <time.h>
+#include <locale> // Convert string to wstring
 // #include "streaming-worker.h"
 #pragma comment (lib,"Gdiplus.lib")
 
 #include "MyAsyncBinding.h"
-
-
-
-
-
 
 bool itIsTime = false;
 
@@ -33,6 +30,19 @@ int smallestTop   = 0;
 int largestRight  = 0;
 int largestBottom = 0;
 bool firstRun     = true;
+
+std::string fileName    = "";
+std::string fileNameBmp = "";
+std::string fileNamePng = "";
+int programState = 0;
+// 0 = Idle
+// 1 = Mask active, waiting for user to select screen region
+// 2 = Generating file
+// 3 = Uploading to server
+// 4 = Waiting for server response
+// 5 = Upload failed, no response from server
+// 6 = Upload failed, server responded with error
+// 7 = Upload successful, copy URL to clipboard
 
 int GetEncoderClsid(const WCHAR* format, CLSID* pClsid){
   UINT num  = 0; // number of image encoders
@@ -64,81 +74,91 @@ int GetEncoderClsid(const WCHAR* format, CLSID* pClsid){
   return -1; // Failure
 }
 
-bool saveBitmap(LPCSTR filename, HBITMAP bmp, HPALETTE pal){
-    bool result = false;
-    PICTDESC pd;
+bool saveBitmap(HBITMAP bmp, HPALETTE pal){
+  bool result = false;
+  PICTDESC pd;
 
-    pd.cbSizeofstruct   = sizeof(PICTDESC);
-    pd.picType      = PICTYPE_BITMAP;
-    pd.bmp.hbitmap  = bmp;
-    pd.bmp.hpal     = pal;
+  pd.cbSizeofstruct = sizeof(PICTDESC);
+  pd.picType        = PICTYPE_BITMAP;
+  pd.bmp.hbitmap    = bmp;
+  pd.bmp.hpal       = pal;
 
-    LPPICTURE picture;
-    HRESULT res = OleCreatePictureIndirect(&pd, IID_IPicture, false,
-                       reinterpret_cast<void**>(&picture));
+  LPPICTURE picture;
+  HRESULT res = OleCreatePictureIndirect(&pd, IID_IPicture, false, reinterpret_cast<void**>(&picture));
 
-    if (!SUCCEEDED(res))
+  if(!SUCCEEDED(res))
     return false;
 
-    LPSTREAM stream;
-    res = CreateStreamOnHGlobal(0, true, &stream);
+  LPSTREAM stream;
+  res = CreateStreamOnHGlobal(0, true, &stream);
 
-    if (!SUCCEEDED(res))
-    {
+  if(!SUCCEEDED(res)){
     picture->Release();
     return false;
-    }
+  }
 
-    LONG bytes_streamed;
-    res = picture->SaveAsFile(stream, true, &bytes_streamed);
+  LONG bytes_streamed;
+  res = picture->SaveAsFile(stream, true, &bytes_streamed);
 
-    HANDLE file = CreateFile(filename, GENERIC_WRITE, FILE_SHARE_READ, 0,
-                 CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, 0);
+  char characters[] = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
-    if (!SUCCEEDED(res) || !file)
-    {
+  fileName = "tmp-";
+
+  srand(time(NULL));
+
+  for(size_t i = 0; i < 6; i++)
+    fileName += characters[rand() % 62];
+
+  fileNameBmp = fileName + ".bmp";
+  fileNamePng = fileName + ".png";
+
+  HANDLE file = CreateFile(fileNameBmp.c_str(), GENERIC_WRITE, FILE_SHARE_READ, 0, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, 0);
+
+  if(!SUCCEEDED(res) || !file){
     stream->Release();
     picture->Release();
     return false;
-    }
+  }
 
-    HGLOBAL mem = 0;
-    GetHGlobalFromStream(stream, &mem);
-    LPVOID data = GlobalLock(mem);
+  HGLOBAL mem = 0;
+  GetHGlobalFromStream(stream, &mem);
+  LPVOID data = GlobalLock(mem);
 
-    DWORD bytes_written;
+  DWORD bytes_written;
 
-    result   = !!WriteFile(file, data, bytes_streamed, &bytes_written, 0);
-    result  &= (bytes_written == static_cast<DWORD>(bytes_streamed));
+  result   = !!WriteFile(file, data, bytes_streamed, &bytes_written, 0);
+  result  &= (bytes_written == static_cast<DWORD>(bytes_streamed));
 
-    GlobalUnlock(mem);
-    CloseHandle(file);
+  GlobalUnlock(mem);
+  CloseHandle(file);
 
-    stream->Release();
-    picture->Release();
+  stream->Release();
+  picture->Release();
 
-    return result;
+  return result;
 }
 
-bool screenCapturePart(int x, int y, int w, int h, LPCSTR fname){
-    HDC hdcSource = GetDC(NULL);
-    HDC hdcMemory = CreateCompatibleDC(hdcSource);
+bool screenCapturePart(int x, int y, int w, int h){
+  HDC hdcSource = GetDC(NULL);
+  HDC hdcMemory = CreateCompatibleDC(hdcSource);
 
-    int capX = GetDeviceCaps(hdcSource, HORZRES);
-    int capY = GetDeviceCaps(hdcSource, VERTRES);
+  int capX = GetDeviceCaps(hdcSource, HORZRES);
+  int capY = GetDeviceCaps(hdcSource, VERTRES);
 
-    HBITMAP hBitmap = CreateCompatibleBitmap(hdcSource, w, h);
-    HBITMAP hBitmapOld = (HBITMAP)SelectObject(hdcMemory, hBitmap);
+  HBITMAP hBitmap    = CreateCompatibleBitmap(hdcSource, w, h);
+  HBITMAP hBitmapOld = (HBITMAP)SelectObject(hdcMemory, hBitmap);
 
-    BitBlt(hdcMemory, 0, 0, w, h, hdcSource, x, y, SRCCOPY);
-    hBitmap = (HBITMAP)SelectObject(hdcMemory, hBitmapOld);
+  BitBlt(hdcMemory, 0, 0, w, h, hdcSource, x, y, SRCCOPY);
+  hBitmap = (HBITMAP)SelectObject(hdcMemory, hBitmapOld);
 
-    DeleteDC(hdcSource);
-    DeleteDC(hdcMemory);
+  DeleteDC(hdcSource);
+  DeleteDC(hdcMemory);
 
-    HPALETTE hpal = NULL;
-    if(saveBitmap(fname, hBitmap, hpal)) return true;
-    return false;
+  HPALETTE hpal = NULL;
+
+  if(saveBitmap(hBitmap, hpal))
+    return true;
+  return false;
 }
 
 void ConvertBmpToPng(){
@@ -148,7 +168,15 @@ void ConvertBmpToPng(){
   // Initializes Windows GDI+, make sure you call GdiplusShutdown when you're done using GDI+
   GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL);
 
-  Gdiplus::Image  *image = new Gdiplus::Image(L"testing.bmp");
+  std::wstring_convert< std::codecvt<wchar_t,char,std::mbstate_t> > conv1;
+  std::wstring_convert< std::codecvt<wchar_t,char,std::mbstate_t> > conv2;
+  std::wstring wcstring1 = conv1.from_bytes(fileNameBmp);
+  std::wstring wcstring2 = conv1.from_bytes(fileNamePng);
+
+  const WCHAR * testing1 = wcstring1.c_str();
+  const WCHAR * testing2 = wcstring2.c_str();
+
+  Gdiplus::Image  *image = new Gdiplus::Image(testing1);
   Gdiplus::Status stat;
   CLSID           encoderClsid;
 
@@ -156,7 +184,7 @@ void ConvertBmpToPng(){
   GetEncoderClsid(L"image/png", &encoderClsid);
 
   // Convert the .bmp file into a .png file
-  stat = image->Save(L"testing.png", &encoderClsid, NULL);
+  stat = image->Save(testing2, &encoderClsid, NULL);
 
   if(stat != Gdiplus::Ok){
     std::cout << "Error converting .bmp to .png\n";
@@ -173,14 +201,12 @@ void ConvertBmpToPng(){
 LRESULT CALLBACK WindowProcTop(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam){
   switch(msg){
     case WM_CLOSE:{
-      std::cout << "CLOSE\n";
       itIsTime = true;
       DestroyWindow(hwnd);
       break;
     }
 
     case WM_DESTROY:{
-      std::cout << "DESTORY\n";
       itIsTime = true;
       PostQuitMessage(0);
       break;
@@ -226,7 +252,7 @@ LRESULT CALLBACK WindowProcTop(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam
       int ssY = selectY1 + smallestTop;  // Subtract from the smallest top-left corner
 
       std::cout << selectX1 << ", " << selectY1 << ", " << width << ", " << height << "\n";
-      screenCapturePart(ssX, ssY, width, height, "testing.bmp");
+      screenCapturePart(ssX, ssY, width, height);
       ConvertBmpToPng();
 
       break;
@@ -326,13 +352,13 @@ void Reeeeeeeee(){
   EnumDisplayMonitors(NULL, NULL, MonitorEnumProc, 0);
   int maskWidth  = largestRight  - smallestLeft;
   int maskHeight = largestBottom - smallestTop;
-  std::cout << "========== Monitor Information ==========\n";
-  std::cout << "smallestLeft : " << smallestLeft  << "\n";
-  std::cout << "smallestTop  : " << smallestTop   << "\n";
-  std::cout << "largestRight : " << largestRight  << "\n";
-  std::cout << "largestBottom: " << largestBottom << "\n";
-  std::cout << "maskWidth    : " << maskWidth     << "\n";
-  std::cout << "maskHeight   : " << maskHeight    << "\n";
+  // std::cout << "========== Monitor Information ==========\n";
+  // std::cout << "smallestLeft : " << smallestLeft  << "\n";
+  // std::cout << "smallestTop  : " << smallestTop   << "\n";
+  // std::cout << "largestRight : " << largestRight  << "\n";
+  // std::cout << "largestBottom: " << largestBottom << "\n";
+  // std::cout << "maskWidth    : " << maskWidth     << "\n";
+  // std::cout << "maskHeight   : " << maskHeight    << "\n";
 
   WNDCLASS winClassTop;
   winClassTop.style = CS_DBLCLKS | CS_OWNDC | CS_HREDRAW | CS_VREDRAW;
@@ -423,71 +449,6 @@ void Reeeeeeeee(){
   }
 }
 
-void OneSmallWindow(){
-  HINSTANCE hInstance = GetModuleHandle(NULL);
-  MSG Msg;
-
-  EnumDisplayMonitors(NULL, NULL, MonitorEnumProc, 0);
-  int maskWidth  = largestRight  - smallestLeft;
-  int maskHeight = largestBottom - smallestTop;
-  std::cout << "========== Monitor Information ==========\n";
-  std::cout << "smallestLeft : " << smallestLeft  << "\n";
-  std::cout << "smallestTop  : " << smallestTop   << "\n";
-  std::cout << "largestRight : " << largestRight  << "\n";
-  std::cout << "largestBottom: " << largestBottom << "\n";
-  std::cout << "maskWidth    : " << maskWidth     << "\n";
-  std::cout << "maskHeight   : " << maskHeight    << "\n";
-
-  WNDCLASS winClassTop;
-  winClassTop.style = CS_DBLCLKS | CS_OWNDC | CS_HREDRAW | CS_VREDRAW;
-  winClassTop.lpfnWndProc = WindowProcTop;
-  winClassTop.cbClsExtra = 0;
-  winClassTop.cbWndExtra = 0;
-  winClassTop.hInstance = hInstance;
-  winClassTop.hIcon = LoadIcon(NULL, IDI_APPLICATION);
-  winClassTop.hCursor = LoadCursor(NULL, IDC_ARROW);
-  winClassTop.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
-  winClassTop.lpszMenuName = NULL;
-  winClassTop.lpszClassName = "winClassTop";
-
-  RegisterClass(&winClassTop);
-
-  // IMPORTANT! The order that these HWND variables are defined determines what order
-  // the windows appear. The first HWND variable will appear beneath the other HWNDs
-  // and the last HWND variable will appear above all other HWMDs.
-
-  hwndTop = CreateWindowEx(
-    // 1. Allows better window functionality
-    // 2. Makes sure the that window is always on top
-    // 3. Hides the program when the user alt-tabs
-    WS_EX_LAYERED | WS_EX_TOPMOST | WS_EX_TOOLWINDOW,
-    "winClassTop",
-    "Top",
-    // 1. Make it a popup window which removes all borders/menu items from it
-    // 2. Set the window to initially be visible
-    WS_POPUP | WS_VISIBLE,
-    300,
-    300,
-    400,
-    250,
-    NULL,
-    NULL,
-    hInstance,
-    NULL);
-
-  SetLayeredWindowAttributes(hwndTop, NULL, 1,   LWA_ALPHA);
-  std::cout << "SetLayeredWindowAttributes()\n";
-
-  // Change background colors of the windows
-  HBRUSH brushTop = CreateSolidBrush(RGB(255, 255, 255));
-  HBRUSH brushBot = CreateSolidBrush(RGB(0, 0, 0));
-  SetClassLongPtr(hwndTop, GCLP_HBRBACKGROUND, (LONG)brushTop);
-  std::cout << "SetClassLongPtr()\n";
-
-  ShowWindow(hwndTop, SW_SHOW);
-  std::cout << "ShowWindow()\n";
-}
-
 NAN_MODULE_INIT(MyAsyncBinding::Init) {
   Nan::SetMethod(target, "doSyncStuff", DoSyncStuff);
   Nan::SetMethod(target, "doAsyncStuff", DoAsyncStuff);
@@ -572,26 +533,20 @@ class MyAsyncWorker : public Nan::AsyncWorker {
   }
 
   void Execute(){
-    std::cout << "===== Execute variables =====\n";
-    std::cout << "String: " << myString << "\n";
-    std::cout << "Int   : " << myInt    << "\n";
-    std::cout << "Bool  : " << myBool   << "\n";
-    std::cout << "=============================\n";
+    // std::cout << "===== Execute variables =====\n";
+    // std::cout << "String: " << myString << "\n";
+    // std::cout << "Int   : " << myInt    << "\n";
+    // std::cout << "Bool  : " << myBool   << "\n";
+    // std::cout << "=============================\n";
     Reeeeeeeee();
-
-    // while(itIsTime == false){
-    //   std::cout << "Waiting...\n";
-    //   Sleep(200);
-    // }
   }
 
   void HandleOKCallback(){
-    std::cout << "HandleOKCallback()\n";
+    std::string sendToNode = "Data to be sent to Node from C++";
 
-    Nan::HandleScope scope;
     v8::Local<v8::Value> argv[] = {
-      Nan::Null(), // no error occured
-      Nan::New("abcDEF").ToLocalChecked()
+      Nan::New(fileNamePng).ToLocalChecked(),
+      Nan::Null()
     };
 
     callback->Call(2, argv);

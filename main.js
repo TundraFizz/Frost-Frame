@@ -1,11 +1,14 @@
-const {app, BrowserWindow, ipcMain} = require("electron");
-const path = require("path");
-const url  = require("url");
-let $      = require("jquery");
+const {app, BrowserWindow, ipcMain, clipboard} = require("electron");
+const path  = require("path");
+const url   = require("url");
+var fs      = require("fs");      // File system
+var $       = require("jquery");  // jQuery
+var request = require("request"); // POST request to the server
+var m       = require("./");      // C++ module
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
-let win;
+var win;
 
 // function KeyDownFn(evt){
 //   if(evt.keyCode == 73 && evt.ctrlKey && evt.shiftKey)
@@ -73,37 +76,31 @@ app.on("activate", () => {
   }
 });
 
-// Listen for async message from renderer process
-ipcMain.on("async", (event, arg) => {
-    // Print 1
-    console.log(arg);
-    // Reply on async message from renderer process
+// Listen for message from renderer process
+ipcMain.on("message", (event, msg) => {
+    console.log(msg);
     event.sender.send("async-reply", 2);
 });
 
-// Listen for sync message from renderer process
-ipcMain.on("sync", (event, arg) => {
-    // Print 3
-    console.log(arg);
-    // Send value synchronously back to renderer process
-    event.returnValue = 4;
-    // Send async message to renderer process
-    mainWindow.webContents.send("ping", 5);
-});
-
-////////////////////////////////////////////////////////////////////////////////
-
-var m = require("./");
-
-function TestAsync(){return new Promise((resolve) => {
-  m.doAsyncStuff(123, 5, true, function(error, result){
-    console.log("We are now resolving");
-    return resolve(result);
-  });
-})}
-
 app.on("test", (arg) => {
-  TestAsync().then(() => {
-    console.log("Finished the C++ function!");
+  m.doAsyncStuff(123, 5, true, function(result, error){
+    console.log(`Sending ${result} to the server`);
+
+    var formData = {
+      "key": "This is the user's secret",
+      "file": fs.createReadStream(result)
+    };
+
+    request.post({url:'http://localhost:9001/qwerty', formData: formData, json: true}, function(err, res, body){
+      if(err)
+        return console.error("FAILED:", err);
+
+      console.log("Copying the below URL to the clipboard");
+      console.log(body["url"]);
+
+      clipboard.write({"text": body["url"]});
+
+      win.webContents.send("message", body["url"]);
+    });
   });
 });
