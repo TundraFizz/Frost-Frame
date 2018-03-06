@@ -8,10 +8,10 @@
 #include <gdiplus.h>
 #include <time.h>
 #include <locale> // Convert string to wstring
-// #include "streaming-worker.h"
+#include "MyAsyncBinding.h"
 #pragma comment (lib,"Gdiplus.lib")
 
-#include "MyAsyncBinding.h"
+std::string directoryToSaveCopy = "FEATURE_TO_DO";
 
 bool itIsTime = false;
 
@@ -30,6 +30,9 @@ int smallestTop   = 0;
 int largestRight  = 0;
 int largestBottom = 0;
 bool firstRun     = true;
+
+int maskWidth  = 0;
+int maskHeight = 0;
 
 std::string fileName    = "";
 std::string fileNameBmp = "";
@@ -281,10 +284,22 @@ LRESULT CALLBACK WindowProcTop(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam
         if(selectY1 > selectY2) lowerRightY = selectY1;
         else        lowerRightY = selectY2;
 
+        // std::cout << "===========================\n";
+        // std::cout << "upperLeftX:   " << upperLeftX   << "\n";
+        // std::cout << "upperLeftY:   " << upperLeftY   << "\n";
+        // std::cout << "lowerRightX:  " << lowerRightX  << "\n";
+        // std::cout << "lowerRightY:  " << lowerRightY  << "\n";
+        // std::cout << "smallestLeft: " << smallestLeft << "\n";
+        // std::cout << "smallestTop:  " << smallestTop  << "\n";
+        // std::cout << "maskWidth:    " << maskWidth    << "\n";
+        // std::cout << "maskHeight:   " << maskHeight   << "\n";
+
         HRGN WinRgn1;
         HRGN WinRgn2;
         WinRgn1 = CreateRectRgn(upperLeftX, upperLeftY, lowerRightX, lowerRightY);
-        WinRgn2 = CreateRectRgn(-2560, 0, 2560, 1440);
+        WinRgn2 = CreateRectRgn(smallestLeft, smallestTop, maskWidth, maskHeight);
+
+        // WinRgn2 = CreateRectRgn(-2560, 0, 2560, 1440);
         CombineRgn(WinRgn1, WinRgn1, WinRgn2, RGN_XOR);
         SetWindowRgn(hwndBot, WinRgn1, true);
         UpdateWindow(hwndBot);
@@ -350,8 +365,8 @@ void Reeeeeeeee(){
   HINSTANCE hInstance = GetModuleHandle(NULL);
 
   EnumDisplayMonitors(NULL, NULL, MonitorEnumProc, 0);
-  int maskWidth  = largestRight  - smallestLeft;
-  int maskHeight = largestBottom - smallestTop;
+  maskWidth  = largestRight  - smallestLeft;
+  maskHeight = largestBottom - smallestTop;
   // std::cout << "========== Monitor Information ==========\n";
   // std::cout << "smallestLeft : " << smallestLeft  << "\n";
   // std::cout << "smallestTop  : " << smallestTop   << "\n";

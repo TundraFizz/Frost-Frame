@@ -17,7 +17,17 @@ var win;
 
 function createWindow(){
   // Create the browser window.
-  win = new BrowserWindow({width: 800, height: 600});
+  win = new BrowserWindow({
+    width: 800,
+    height: 600,
+    show: false,
+    icon: path.join(__dirname, "icon64x64.png")
+  });
+
+  win.once("ready-to-show", () => {
+    win.minimize();
+    // win.show();
+  });
 
   // and load the index.html of the app.
   win.loadURL(url.format({
@@ -45,19 +55,7 @@ function createWindow(){
 // Some APIs can only be used after this event occurs.
 app.on("ready", createWindow);
 
-  app.$ = $;
-
-  // Open the DevTools.
-  // win.webContents.openDevTools();
-  // alert("sdlkfsdlkfjklsdf");
-
-  // $("*").keydown(function(event){
-  //   if( event.which == 73){
-  //     console.log("IIIIIIIIIIIIIIIII");
-  //     // alert("IIIIIIIIIIIIIIIII");
-  //     // event.preventDefault();
-  //   }
-  // });
+// win.webContents.openDevTools(); // Open the DevTools
 
 // Quit when all windows are closed.
 app.on("window-all-closed", () => {

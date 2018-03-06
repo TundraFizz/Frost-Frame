@@ -1,18 +1,20 @@
 <style>
-#button {
+#buttons {
+}
+
+.btn {
   position: relative;
   width: 100px;
   height: 32px;
-  left: 20px;
-  top: 100px;
   background-color: darkgray;
   color: black;
   border: 1px solid black;
   cursor: pointer;
   text-align: center;
   line-height: 32px;
+  display: inline-block;
 }
-#button:active {
+.btn:active {
   background-color: lightgray;
 }
 
@@ -22,21 +24,27 @@
   -ms-user-select: none;
   user-select: none;
 }
+
+#btn-screenshot {
+}
+
+#btn-quit {
+}
 </style>
 
 <!DOCTYPE html>
 <html>
   <head>
     <meta charset="UTF-8">
+    <title>Frost Frame</title>
     <script>if (typeof module === "object") {window.module = module; module = undefined;}</script>
     <script src="./node_modules/jquery/dist/jquery.js"></script>
-    <!-- <script src="./form-thing.js"></script> -->
-    <!-- <script src="./main.js"></script> -->
-    <!-- <script>if (window.module) module = window.module;</script> -->
-    <title>Hello World!</title>
   </head>
   <body>
-    <div id="button" class="no-select">Click</div>
+    <div id="buttons">
+      <div id="btn-screenshot" class="btn no-select">Screenshot</div>
+      <div id="btn-quit"       class="btn no-select">Quit</div>
+    </div>
     <!-- <h1>Hello World!</h1>
     Using Node: <script>document.write(process.versions.node)</script><br>
     Using Chrome: <script>document.write(process.versions.chrome)</script><br>
@@ -59,20 +67,12 @@ ipc.on("message", (event, msg) => {
   $("#url-here").html(`<a href="${msg}">${msg}</a>`);
 })
 
-$("#button").click(function(){
+$("#btn-screenshot").click(function(){
   require("electron").remote.app.emit("test", "Yolo swag!");
 });
 
-$("h1").each(function(){
-  $(this).css("color", "blue");
-});
-
-$("*").keydown(function(event){
-  if(event.which == 73){
-    // console.log("IIIIIIIIIIIIIIIII");
-    // alert("IIIIIIIIIIIIIIIII");
-    // event.preventDefault();
-  }
+$("#btn-quit").click(function(){
+  window.close();
 });
 
 </script>
