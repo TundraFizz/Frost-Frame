@@ -68,11 +68,11 @@ ipc.on("message", (event, msg) => {
 })
 
 $("#btn-screenshot").click(function(){
-  require("electron").remote.app.emit("test", "Yolo swag!");
+  require("electron").remote.app.emit("message", {"fun":"TakeScreenshot","data":null});
 });
 
 $("#btn-quit").click(function(){
-  window.close();
+  require("electron").remote.app.emit("message", {"fun":"Quit","data":null});
 });
 
 </script>

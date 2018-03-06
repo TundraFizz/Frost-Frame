@@ -1,4 +1,4 @@
-const {app, BrowserWindow, Tray, Menu, ipcMain, clipboard} = require("electron");
+const {app, BrowserWindow, Tray, Menu, globalShortcut, ipcMain, clipboard} = require("electron");
 const path  = require("path");
 const url   = require("url");
 var fs      = require("fs");      // File system
@@ -11,14 +11,22 @@ var m       = require("./");      // C++ module
 var win  = null;
 var tray = null;
 var quit = false;
+var clickedOnButton = null;
 
 function createWindow(){
   // Create the browser window
   win = new BrowserWindow({
-    width: 800,
-    height: 600,
+    width: 400,
+    height: 200,
     show: false,
+    resizable: false,
     icon: path.join(__dirname, "icon64x64.png")
+  });
+
+  win.setMenu(null);
+
+  globalShortcut.register("ctrl+shift+1", function (){
+    TakeScreenshotShortcut();
   });
 
   tray = new Tray(path.join(__dirname, "icon64x64.png"));
@@ -131,16 +139,43 @@ app.on("activate", () => {
   }
 });
 
-// Listen for message from renderer process
 ipcMain.on("message", (event, msg) => {
-    console.log(msg);
-    event.sender.send("async-reply", 2);
+  console.log(msg);
+  event.sender.send("async-reply", 2);
 });
 
-app.on("test", (arg) => {
-  win.minimize();
+app.on("message", (arg) => {
+  if     (arg["fun"] == "TakeScreenshot") TakeScreenshotButton(arg["data"]);
+  else if(arg["fun"] == "Quit")           Quit                (arg["data"]);
+});
+
+function Quit(){
+  quit = true;
+  win.close();
+}
+
+function TakeScreenshotShortcut(){
+  clickedOnButton = false;
+  TakeScreenshot();
+}
+
+function TakeScreenshotButton(){
+  clickedOnButton = true;
+  TakeScreenshot();
+}
+
+function TakeScreenshot(){
+  win.hide();
+  // win.minimize();
 
   m.doAsyncStuff(123, 5, true, function(result, error){
+
+    // If the user clicked on the "Screenshot" button, then we'll display the window again
+    if(clickedOnButton)
+      win.show();
+    else
+      win.hide();
+
     console.log(`Sending ${result} to the server`);
 
     var formData = {
@@ -148,7 +183,7 @@ app.on("test", (arg) => {
       "file": fs.createReadStream(result)
     };
 
-    request.post({url:'http://localhost:9001/qwerty', formData: formData, json: true}, function(err, res, body){
+    request.post({url:"https://fizz.gg/qwerty", formData: formData, json: true}, function(err, res, body){
       if(err)
         return console.error("FAILED:", err);
 
@@ -160,4 +195,4 @@ app.on("test", (arg) => {
       win.webContents.send("message", body["url"]);
     });
   });
-});
+}
