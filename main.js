@@ -17,7 +17,7 @@ function createWindow(){
   // Create the browser window
   win = new BrowserWindow({
     width: 400,
-    height: 200,
+    height: 300,
     show: false,
     resizable: false,
     icon: path.join(__dirname, "icon64x64.png")
@@ -135,18 +135,23 @@ app.on("activate", () => {
   // On macOS it's common to re-create a window in the app when the
   // dock icon is clicked and there are no other windows open.
   if (win === null){
-    createWindow()
+    createWindow();
   }
 });
 
+// This isn't used anymore
 ipcMain.on("message", (event, msg) => {
   console.log(msg);
   event.sender.send("async-reply", 2);
 });
 
 app.on("message", (arg) => {
-  if     (arg["fun"] == "TakeScreenshot") TakeScreenshotButton(arg["data"]);
-  else if(arg["fun"] == "Quit")           Quit                (arg["data"]);
+  var func = arg["function"];
+  var data = JSON.parse(arg["data"]);
+
+  if     (func == "TakeScreenshot") TakeScreenshotButton(data);
+  else if(func == "Quit")           Quit                (data);
+  else if(func == "Login")          Login               (data);
 });
 
 function Quit(){
@@ -195,4 +200,11 @@ function TakeScreenshot(){
       win.webContents.send("message", body["url"]);
     });
   });
+}
+
+function Login(data){
+  console.log("========== Login ==========");
+  console.log(data["username"]);
+  console.log(data["password"]);
+  console.log();
 }

@@ -56,23 +56,54 @@
       <div>-----------------------------------------------------</div>
     </div>
 
+    <div>
+      <table id="form-login">
+        <tr>
+          <td><input value="" name="username" type="text"></td>
+        </tr>
+        <tr>
+          <td><input value="" name="password" type="password"></td>
+        </tr>
+        <tr>
+          <td><div id="login" class="btn no-select">Submit</div></td>
+        </tr>
+      </table>
+    </div>
+
   </body>
 </html>
 
 <script>
+const ipc         = require("electron").ipcRenderer;
+const EmitMessage = require("electron").remote.app.emit;
 
-const ipc = require("electron").ipcRenderer;
+function SendMessage(func, data=null){
+  EmitMessage("message", {
+    "function": func,
+    "data"    : JSON.stringify(data)
+  });
+}
 
+// Receiving a message from main.js
 ipc.on("message", (event, msg) => {
   $("#url-here").html(`<a href="${msg}">${msg}</a>`);
 })
 
+// Sending messages to main.js
 $("#btn-screenshot").click(function(){
-  require("electron").remote.app.emit("message", {"fun":"TakeScreenshot","data":null});
+  SendMessage("TakeScreenshot");
 });
 
 $("#btn-quit").click(function(){
-  require("electron").remote.app.emit("message", {"fun":"Quit","data":null});
+  SendMessage("Quit");
+});
+
+$("#login").click(function(){
+  var data = {
+    "username": $("#form-login [name='username']").val(),
+    "password": $("#form-login [name='password']").val()
+  };
+  SendMessage("Login", data);
 });
 
 </script>
